@@ -1,3 +1,3 @@
 'use client';
-import Link from 'next/link';import {products} from '@/data/products';import {ProductCard} from '@/components/site';import CinematicExperience from '@/components/cinematic/CinematicExperience';
-export default function Home(){return <><CinematicExperience/><section id="collection" className="collection wrap"><p className="lux-kicker dark">FINAŁ / KOLEKCJA ŚWIĄTECZNA</p><h2 className="final-title">Każda chwila zasługuje<br/>na swoje <em>światło.</em></h2><div className="editorial-products">{products.map((p,i)=><div className={`editorial-card card-${i+1}`} key={p.id}><ProductCard product={p}/></div>)}</div><Link className="text-link" href="/sklep">Przejdź do sklepu →</Link></section></>}
+import CinematicExperience from '@/components/cinematic/CinematicExperience';
+export default function Home(){return <CinematicExperience/>}
