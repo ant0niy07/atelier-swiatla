@@ -1,0 +1,1 @@
+import type {MetadataRoute} from 'next'; import {products} from '@/data/products'; export default function sitemap():MetadataRoute.Sitemap{return ['','/sklep','/kontakt',...products.map(p=>`/produkt/${p.slug}`)].map(url=>({url:`${process.env.NEXT_PUBLIC_SITE_URL??'http://localhost:3000'}${url}`,lastModified:new Date()}))}
