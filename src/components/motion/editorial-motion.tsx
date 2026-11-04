@@ -1,0 +1,6 @@
+'use client';
+import {useEffect,useRef} from 'react';
+import {gsap} from 'gsap';
+import {ScrollTrigger} from 'gsap/ScrollTrigger';
+import Lenis from 'lenis';
+export function EditorialMotion(){const root=useRef<HTMLDivElement>(null);useEffect(()=>{if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;gsap.registerPlugin(ScrollTrigger);const ctx=gsap.context(()=>{gsap.utils.toArray<HTMLElement>('[data-reveal]').forEach(el=>gsap.fromTo(el,{y:38,opacity:0},{y:0,opacity:1,duration:.9,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 87%',once:true}}));gsap.to('[data-craft-image]',{yPercent:-9,ease:'none',scrollTrigger:{trigger:'[data-craft]',start:'top bottom',end:'bottom top',scrub:.8}});gsap.fromTo('[data-signature-image]',{scale:.82,rotate:-3},{scale:1,rotate:0,ease:'none',scrollTrigger:{trigger:'[data-signature]',start:'top 80%',end:'bottom 25%',scrub:1}})},{scope:root});const lenis=new Lenis({smoothWheel:true,lerp:.09});let f=0;const raf=(t:number)=>{lenis.raf(t);f=requestAnimationFrame(raf)};f=requestAnimationFrame(raf);return()=>{cancelAnimationFrame(f);lenis.destroy();ctx.revert();ScrollTrigger.getAll().forEach(t=>t.kill())}},[]);return <div ref={root} aria-hidden="true"/>}
