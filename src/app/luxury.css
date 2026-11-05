@@ -1,1 +1,98 @@
-header{position:absolute!important;inset:0 0 auto;background:transparent!important;color:#f8f2e8!important;z-index:50!important}.film{height:100svh;position:relative;overflow:hidden;background:#130c0b;color:#fff}.film-image{position:absolute;inset:0;background-position:center;background-size:cover}.film:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#130b0ee8,#130b0e88 38%,transparent 74%);pointer-events:none}.film-copy{position:absolute;z-index:2;left:8%;bottom:15%;max-width:470px}.film-copy h1{font:500 clamp(49px,6.2vw,94px)/.88 'Cormorant Garamond';margin:16px 0}.film-copy a{display:inline-block;margin-top:22px;padding:14px 18px;border:1px solid #d3ad70;color:#fff}.film-skip,.film-nav{position:absolute;z-index:3}.film-skip{right:28px;top:106px}.film-nav{right:28px;bottom:28px}.shop-dark{min-height:100vh;position:relative;background:#160d0c;color:#f5ecdc;padding:140px 0 100px}.shop-bg{position:absolute;inset:0;background:linear-gradient(#150b0ad9,#150b0af2),url('/cinematic/collection-bg.png') center/cover fixed}.shop-content{position:relative}.shop-dark h1{font-size:clamp(58px,8vw,110px)}.shop-dark .filters{margin:48px 0}.shop-dark .filter{color:#f5ecdc;background:#21110eaa;border-color:#b8945e}.shop-dark .selected{background:#d6b377;color:#251510}.shop-dark .card{padding:12px;background:#1b100ee6;color:#f5ecdc}.product-art{background-size:cover!important;background-position:center!important}.product-art span{display:none}.product-art.tree,.product-art.ginger{background-image:url('/cinematic/mikolajki.png')}.product-art.amber,.product-art.mini{background-image:url('/cinematic/first-light.png')}
+:root { --night:#110a0a; --wine:#321313; --paper:#f7eee0; --gold:#d4af72; --line:rgba(247,238,224,.2); }
+
+body { background:var(--night); color:var(--paper); }
+.site-header { position:absolute !important; inset:0 0 auto; z-index:50; color:var(--paper); background:linear-gradient(180deg,rgba(11,6,6,.72),transparent) !important; }
+.header-inner { min-height:84px; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:28px; }
+.brand { letter-spacing:.16em; font-size:13px !important; font-weight:700; white-space:nowrap; color:inherit; }
+.site-header nav { display:flex; gap:24px; font-size:11px; letter-spacing:.12em; text-transform:uppercase; }
+.site-header nav a { color:inherit; }
+.cart-btn { justify-self:end; display:inline-flex; align-items:center; gap:7px; min-width:42px; min-height:42px; border:1px solid var(--line); color:inherit; background:rgba(20,10,10,.22); border-radius:50%; cursor:pointer; }
+
+.shop-dark { position:relative; isolation:isolate; min-height:100vh; overflow:hidden; padding:150px 0 100px; color:var(--paper); background:var(--night); }
+.shop-bg { position:absolute; z-index:-1; inset:0; background:linear-gradient(180deg,rgba(14,6,7,.62),rgba(14,6,7,.95) 58%,#110a0a),url('/cinematic/collection-bg.png') center / cover; }
+.shop-content { position:relative; }
+.catalog-head { position:relative !important; inset:auto !important; z-index:auto !important; max-width:690px; margin-bottom:42px; padding:0 !important; background:transparent !important; color:var(--paper) !important; border:0 !important; display:block !important; height:auto !important; }
+.eyebrow { display:block; color:var(--gold); font-size:10px; letter-spacing:.18em; text-transform:uppercase; }
+.catalog-head h1 { margin:13px 0 15px; font-size:clamp(3.5rem,8vw,7rem); line-height:.88; letter-spacing:-.04em; }
+.catalog-head p { max-width:380px; margin:0; font-size:16px; line-height:1.65; }
+.catalog-head small { display:block; margin-top:15px; color:rgba(247,238,224,.7); }
+.filters { display:flex; flex-wrap:wrap; gap:10px; margin:0 0 35px; }
+.filter { min-height:38px; padding:8px 13px; border:1px solid rgba(212,175,114,.56); background:rgba(37,18,17,.68); color:var(--paper); font:600 10px/1 Manrope,sans-serif; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; }
+.filter:hover,.filter.selected { color:#25130f; background:var(--gold); }
+.filter:disabled { cursor:not-allowed; opacity:.48; }
+.products.luxury-products { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; }
+.card { display:flex; flex-direction:column; min-width:0; padding:12px; border:1px solid rgba(235,210,166,.18); color:var(--paper); background:linear-gradient(145deg,rgba(50,19,19,.85),rgba(16,9,9,.93)); box-shadow:0 18px 55px rgba(0,0,0,.22); transition:transform .28s ease,border-color .28s ease; }
+.card:hover { transform:translateY(-5px); border-color:rgba(212,175,114,.75); }
+.product-art { position:relative; min-height:270px; overflow:hidden; background-color:#281513; background-position:center; background-size:cover; box-shadow:inset 0 0 0 1px rgba(255,255,255,.07); }
+.product-art::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg,transparent 45%,rgba(12,5,5,.54)); }
+.product-art span { position:absolute; z-index:1; left:12px; bottom:10px; color:rgba(255,255,255,.78); font-size:8px; letter-spacing:.1em; text-transform:uppercase; }
+.card .tag { align-self:flex-start; margin-top:16px; color:var(--gold); font-size:9px; letter-spacing:.12em; text-transform:uppercase; }
+.card h3 { margin:10px 0 7px; font:500 26px/.98 'Cormorant Garamond',serif; }
+.card-description { min-height:58px; margin:0; color:rgba(247,238,224,.72); font-size:12px; line-height:1.55; }
+.meta { margin:14px 0; color:var(--gold); font-size:13px; }
+.btn { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:11px 17px; border:1px solid var(--gold); background:var(--gold); color:#25130f; font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+.btn.ghost { margin-top:auto; background:transparent; color:var(--paper); }
+
+.product-page-dark,.legal { min-height:100vh; padding:150px 0 100px; color:var(--paper); background:radial-gradient(circle at 80% 20%,#3c201d 0,transparent 37%),var(--night); }
+.product-page { display:grid; grid-template-columns:minmax(0,1.06fr) minmax(280px,.94fr); align-items:center; gap:clamp(36px,7vw,110px); }
+.gallery { min-width:0; }
+.product-art-large { min-height:clamp(420px,64vh,700px); }
+.product-copy { min-width:0; }
+.back-link { display:inline-block; margin-bottom:30px; color:var(--gold); font-size:10px; letter-spacing:.12em; text-transform:uppercase; }
+.product-copy .tag { display:block; color:var(--gold); font-size:10px; letter-spacing:.12em; text-transform:uppercase; }
+.product-copy h1 { margin:14px 0; font-size:clamp(3rem,5vw,5.5rem); line-height:.9; }
+.product-price { margin:0 0 24px; color:var(--gold); font-size:18px; }
+.product-description { max-width:520px; line-height:1.8; }
+.variants { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 20px; }
+.notice { margin:24px 0; padding:16px; border:1px solid rgba(212,175,114,.34); background:rgba(255,255,255,.045); color:rgba(247,238,224,.85); font-size:13px; line-height:1.55; }
+.product-copy .btn:disabled { cursor:not-allowed; opacity:.62; }
+.product-safety { margin-top:36px; padding-top:28px; border-top:1px solid var(--line); }
+.product-safety h2 { margin:0 0 12px; font-size:28px; }
+.product-safety p { color:rgba(247,238,224,.75); line-height:1.6; }
+
+.overlay { position:fixed; z-index:90; inset:0; border:0; background:rgba(0,0,0,.62); backdrop-filter:blur(5px); cursor:default; }
+.drawer { position:fixed; z-index:91; top:0; right:0; width:min(440px,100%); height:100dvh; overflow:auto; padding:26px; color:var(--paper); background:linear-gradient(135deg,#21100f,#100909); border-left:1px solid rgba(212,175,114,.35); box-shadow:-25px 0 60px rgba(0,0,0,.35); }
+.drawer-top { display:flex; align-items:center; justify-content:space-between; }
+.drawer-close { display:grid; place-items:center; width:40px; height:40px; border:1px solid var(--line); border-radius:50%; color:var(--paper); background:transparent; cursor:pointer; }
+.drawer h2 { margin:36px 0 26px; font-size:46px; }
+.drawer-empty { color:rgba(247,238,224,.7); }
+.drawer-lines { border-top:1px solid var(--line); }
+.drawer-item { display:flex; justify-content:space-between; gap:15px; padding:20px 0; border-bottom:1px solid var(--line); }
+.drawer-item strong,.drawer-item small { display:block; }
+.drawer-item small { margin-top:7px; color:var(--gold); }
+.quantity-controls { display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:8px; max-width:115px; }
+.quantity-controls button { width:27px; height:27px; border:1px solid var(--line); color:var(--paper); background:transparent; cursor:pointer; }
+.quantity-controls .remove-line { width:auto; height:auto; margin-top:5px; border:0; color:rgba(247,238,224,.7); text-decoration:underline; }
+.drawer-total { display:flex; justify-content:space-between; margin:28px 0; }
+.drawer-checkout { width:100%; }
+.footer { padding:58px 0; color:var(--paper); background:#0d0808; border-top:1px solid rgba(212,175,114,.15); }
+.footer-grid { display:flex; justify-content:space-between; gap:20px; align-items:center; }
+.footer p { margin:0; color:rgba(247,238,224,.6); font-size:12px; }
+.legal h1 { margin:12px 0 28px; font-size:clamp(48px,6vw,82px); }
+
+.film { position:relative; height:100svh; min-height:620px; overflow:hidden; color:var(--paper); background:#120a09; isolation:isolate; }
+.film-image { position:absolute; z-index:-3; inset:0; background-position:center; background-size:cover; will-change:opacity,transform; }
+.film::after { content:''; position:absolute; z-index:-2; inset:0; pointer-events:none; background:linear-gradient(90deg,rgba(15,7,7,.94),rgba(19,8,8,.62) 40%,rgba(12,5,5,.08) 76%),linear-gradient(0deg,rgba(8,4,4,.7),transparent 50%); }
+.film-copy { position:absolute; z-index:4; left:max(7vw,28px); bottom:14vh; width:min(450px,calc(100vw - 56px)); }
+.film-copy h1 { margin:15px 0 17px; font:500 clamp(48px,6.5vw,96px)/.88 'Cormorant Garamond',serif; letter-spacing:-.045em; }
+.film-copy p { max-width:390px; margin:0; color:rgba(247,238,224,.86); line-height:1.65; }
+.film-copy a { display:inline-flex; gap:13px; margin-top:25px; padding:13px 16px; border:1px solid var(--gold); color:var(--paper); font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; transition:background .25s,color .25s; }
+.film-copy a:hover { color:#20100d; background:var(--gold); }
+.film-skip,.film-nav { position:absolute; z-index:7; border:1px solid var(--line); color:var(--paper); background:rgba(20,9,8,.36); backdrop-filter:blur(8px); }
+.film-skip { top:106px; right:28px; padding:10px 13px; font-size:10px; letter-spacing:.08em; cursor:pointer; }
+.film-nav { display:flex; align-items:center; gap:11px; right:28px; bottom:28px; padding:8px; }
+.film-nav button { display:grid; place-items:center; width:31px; height:31px; border:0; color:inherit; background:transparent; cursor:pointer; }
+.film-nav button:disabled { opacity:.35; cursor:not-allowed; }
+.film-nav i { min-width:49px; color:rgba(247,238,224,.82); font-size:10px; font-style:normal; letter-spacing:.09em; }
+.film-atmosphere { position:absolute; z-index:1; inset:0; overflow:hidden; pointer-events:none; }
+.film-atmosphere i { position:absolute; width:5px; height:5px; border-radius:50%; background:#fff2cf; box-shadow:0 0 12px 4px rgba(255,203,112,.3); opacity:.68; animation:atmosphere-float 6s linear infinite; }
+.film-atmosphere i:nth-child(1){left:18%;top:18%;animation-delay:-1s}.film-atmosphere i:nth-child(2){left:42%;top:8%;animation-delay:-4s}.film-atmosphere i:nth-child(3){left:72%;top:23%;animation-delay:-2s}.film-atmosphere i:nth-child(4){left:88%;top:54%;animation-delay:-5s}.film-atmosphere i:nth-child(5){left:58%;top:76%;animation-delay:-3s}.film-atmosphere i:nth-child(6){left:29%;top:62%;animation-delay:-.5s}
+.film--snow .film-atmosphere i { width:4px; height:8px; background:#fff; box-shadow:none; animation-duration:7s; }
+.film--petals .film-atmosphere i { width:10px; height:6px; border-radius:70% 30% 70% 30%; background:#dc8691; box-shadow:none; animation-duration:8s; }
+.film--glow .film-atmosphere i { animation-duration:4.5s; }
+.film-flame { position:absolute; z-index:3; right:clamp(18%,27vw,36%); bottom:clamp(19%,27vh,32%); }
+@keyframes atmosphere-float { from{transform:translate3d(0,-8vh,0) rotate(0);opacity:0} 12%{opacity:.75} to{transform:translate3d(38px,88vh,0) rotate(220deg);opacity:0} }
+
+@media (max-width:900px) { .products.luxury-products { grid-template-columns:repeat(2,minmax(0,1fr)); } .product-page { grid-template-columns:1fr; } }
+@media (max-width:640px) { .header-inner { min-height:68px; grid-template-columns:1fr auto; gap:12px; } .site-header nav { display:none; } .brand { font-size:11px !important; } .shop-dark { padding-top:112px; } .catalog-head h1 { font-size:clamp(3.25rem,15vw,5.4rem); } .products.luxury-products { grid-template-columns:1fr; } .product-art { min-height:300px; } .product-page-dark,.legal { padding-top:105px; } .drawer { padding:20px; } .footer-grid { display:block; } .footer p { margin-top:16px; } .film-copy { bottom:112px; } .film-copy h1 { font-size:clamp(44px,13vw,66px); } .film-flame { right:23%; bottom:32%; transform:scale(.72); } .film-skip { top:86px; right:16px; } .film-nav { right:16px; bottom:16px; } }
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition-duration:.01ms!important; animation-duration:.01ms!important; animation-iteration-count:1!important; } }

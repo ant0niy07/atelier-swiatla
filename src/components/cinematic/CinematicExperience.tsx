@@ -1,3 +1,113 @@
-'use client';import Link from'next/link';import{AnimatePresence,motion,useReducedMotion}from'motion/react';import{useEffect,useRef,useState}from'react';
-const S=[['ATELIER ŚWIATŁA','Każda chwila zasługuje na swoje światło.','Odkryj kolekcję','first-light','/sklep'],['6 GRUDNIA','MIKOŁAJKI','Zapach piernika, któremu nie oprze się nawet Święty Mikołaj.','mikolajki','/produkt/piernikowy-ludzik'],['24 GRUDNIA','WIGILIA','Światło, które łączy przy jednym stole.','first-light','/sklep'],['25–26 GRUDNIA','BOŻE NARODZENIE','Najpiękniejsze chwile mają własne światło.','mikolajki','/sklep'],['14 LUTEGO','WALENTYNKI','Niektóre uczucia najlepiej wyraża światło.','first-light','/sklep'],['8 MARCA','DZIEŃ KOBIET','Zapach, który mówi więcej niż tysiąc słów.','first-light','/sklep'],['KOLEKCJA','Świeca Choinka 3D','Ręcznie formowana dekoracja dla zimowych rytuałów.','mikolajki','/produkt/swieca-choinka-3d'],['KOLEKCJA','Piernikowy Ludzik','Świąteczny detal pełen ciepła.','mikolajki','/produkt/piernikowy-ludzik'],['KOLEKCJA','Winter Amber','Świeca sojowa w bursztynowym szkle.','first-light','/produkt/winter-amber'],['ATELIER ŚWIATŁA','Zatrzymaj światło na dłużej.','Ręcznie tworzone świece na chwile, które zostają z nami.','first-light','/sklep']];
-export default function CinematicExperience(){const[n,setN]=useState(0),a=useRef(0),busy=useRef(false),reduced=useReducedMotion();const go=(d:number)=>{if(busy.current)return;const x=Math.max(0,Math.min(9,n+d));if(x===n)return;busy.current=true;setN(x);setTimeout(()=>busy.current=false,reduced?80:900)};useEffect(()=>{const w=(e:WheelEvent)=>{e.preventDefault();a.current+=e.deltaY;if(Math.abs(a.current)>55){go(a.current>0?1:-1);a.current=0;setTimeout(()=>a.current=0,150)}};const k=(e:KeyboardEvent)=>{if(['ArrowDown','PageDown',' '].includes(e.key)){e.preventDefault();go(1)}if(['ArrowUp','PageUp'].includes(e.key)){e.preventDefault();go(-1)}};addEventListener('wheel',w,{passive:false});addEventListener('keydown',k);return()=>{removeEventListener('wheel',w);removeEventListener('keydown',k)}},[n]);const s=S[n];return <section className="film"><AnimatePresence mode="wait"><motion.div key={n} className="film-image" initial={{opacity:0,scale:1.05}} animate={{opacity:1,scale:1}} exit={{opacity:0}} transition={{duration:reduced?0:.9}} style={{backgroundImage:`url(/cinematic/${s[3]}.png)`}}/></AnimatePresence><button className="film-skip" onClick={()=>setN(9)}>Pomiń opowieść</button><motion.div key={'c'+n} className="film-copy" initial={{opacity:0,y:24}} animate={{opacity:1,y:0}} transition={{delay:.25}}><span>{s[0]}</span><h1>{s[1]}</h1><p>{s[2]}</p><Link href={s[4]}>{n===0||n===9?'ODKRYJ KOLEKCJĘ':'ZOBACZ PRODUKT'} ↗</Link></motion.div><div className="film-nav"><button onClick={()=>go(-1)} disabled={!n}>←</button><i>{String(n+1).padStart(2,'0')} / 10</i><button onClick={()=>go(1)} disabled={n===9}>→</button></div></section>}
+'use client';
+
+import Link from 'next/link';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { InteractiveCandleFlame } from './InteractiveCandleFlame';
+
+type Scene = {
+  kicker: string;
+  title: string;
+  copy: string;
+  asset: string;
+  href?: string;
+  ambient: 'snow' | 'petals' | 'glow' | 'sparkles';
+  flame?: boolean;
+};
+
+const scenes: Scene[] = [
+  { kicker: 'ATELIER ŚWIEC', title: 'Każda chwila zasługuje na swoje światło.', copy: 'Pierwsze światło Winter Amber rozgrzewa zimowy wieczór.', asset: 'first-light', href: '/sklep', ambient: 'glow', flame: true },
+  { kicker: '6 GRUDNIA · MIKOŁAJKI', title: 'Zapach piernika, któremu nie oprze się nawet Święty Mikołaj.', copy: 'Świąteczna opowieść o małych prezentach i wielkiej radości.', asset: 'mikolajki', href: '/produkt/piernikowy-ludzik', ambient: 'snow' },
+  { kicker: '24 GRUDNIA · WIGILIA', title: 'Światło, które łączy przy jednym stole.', copy: 'Ciepłe światło świec towarzyszy najważniejszym rozmowom.', asset: 'wigilia', ambient: 'snow' },
+  { kicker: '25–26 GRUDNIA · BOŻE NARODZENIE', title: 'Najpiękniejsze chwile mają własne światło.', copy: 'Poranek pachnący choinką, prezentami i spokojem.', asset: 'christmas-morning', ambient: 'sparkles' },
+  { kicker: '14 LUTEGO · WALENTYNKI', title: 'Miłość ma swój własny blask.', copy: 'Koncepcja przyszłej kolekcji dla chwil, które chce się zatrzymać.', asset: 'valentines', ambient: 'petals' },
+  { kicker: '8 MARCA · DZIEŃ KOBIET', title: 'Zapach, który mówi więcej niż tysiąc słów.', copy: 'Kwiaty, światło i gest pamiętany na długo.', asset: 'womens-day', ambient: 'petals' },
+  { kicker: 'KOLEKCJA ŚWIĄTECZNA', title: 'Świeca Choinka 3D', copy: 'Ręcznie formowana dekoracja dla zimowych rytuałów.', asset: 'product-tree', href: '/produkt/swieca-choinka-3d', ambient: 'snow', flame: true },
+  { kicker: 'KOLEKCJA ŚWIĄTECZNA', title: 'Piernikowy Ludzik', copy: 'Świąteczny detal pełen ciepła i miękkiego światła.', asset: 'product-ginger', href: '/produkt/piernikowy-ludzik', ambient: 'sparkles' },
+  { kicker: 'WINTER AMBER', title: 'Ciepło zamknięte w bursztynowym szkle.', copy: 'Koncept świecy sojowej na długie zimowe wieczory.', asset: 'product-amber', href: '/produkt/winter-amber', ambient: 'glow', flame: true },
+  { kicker: 'ATELIER ŚWIEC', title: 'Zatrzymaj światło na dłużej.', copy: 'Ręcznie tworzone świece na chwile, które zostają z nami.', asset: 'final-light', href: '/sklep', ambient: 'glow', flame: true },
+];
+
+export default function CinematicExperience() {
+  const [sceneIndex, setSceneIndex] = useState(0);
+  const wheelSum = useRef(0);
+  const isTransitioning = useRef(false);
+  const touchStart = useRef<number | null>(null);
+  const reducedMotion = useReducedMotion();
+
+  const go = useCallback((direction: number) => {
+    if (isTransitioning.current) return;
+    setSceneIndex((current) => {
+      const next = Math.max(0, Math.min(scenes.length - 1, current + direction));
+      if (next === current) return current;
+      isTransitioning.current = true;
+      window.setTimeout(() => { isTransitioning.current = false; }, reducedMotion ? 80 : 900);
+      return next;
+    });
+  }, [reducedMotion]);
+
+  useEffect(() => {
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      wheelSum.current += Math.max(-36, Math.min(36, event.deltaY));
+      if (Math.abs(wheelSum.current) < 52) return;
+      go(wheelSum.current > 0 ? 1 : -1);
+      wheelSum.current = 0;
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (['ArrowDown', 'PageDown', ' '].includes(event.key)) { event.preventDefault(); go(1); }
+      if (['ArrowUp', 'PageUp'].includes(event.key)) { event.preventDefault(); go(-1); }
+      if (event.key === 'Home') { event.preventDefault(); setSceneIndex(0); }
+      if (event.key === 'End') { event.preventDefault(); setSceneIndex(scenes.length - 1); }
+    };
+    window.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('keydown', onKeyDown);
+    return () => { window.removeEventListener('wheel', onWheel); window.removeEventListener('keydown', onKeyDown); };
+  }, [go]);
+
+  const scene = scenes[sceneIndex];
+  return (
+    <section
+      className={`film film--${scene.ambient}`}
+      onTouchEnd={(event) => {
+        if (touchStart.current === null) return;
+        const distance = event.changedTouches[0].clientY - touchStart.current;
+        if (Math.abs(distance) > 42) go(distance < 0 ? 1 : -1);
+        touchStart.current = null;
+      }}
+      onTouchStart={(event) => { touchStart.current = event.changedTouches[0].clientY; }}
+    >
+      <AnimatePresence mode="wait">
+        <motion.div
+          animate={{ opacity: 1, scale: 1 }}
+          className="film-image"
+          exit={{ opacity: 0, scale: 1.03 }}
+          initial={{ opacity: 0, scale: 1.06 }}
+          key={scene.asset}
+          style={{ backgroundImage: `url(/cinematic/${scene.asset}.png)` }}
+          transition={{ duration: reducedMotion ? 0 : 0.85, ease: 'easeOut' }}
+        />
+      </AnimatePresence>
+      <div className="film-atmosphere" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div>
+      {scene.flame && <InteractiveCandleFlame className="film-flame" size={82} reducedMotion={Boolean(reducedMotion)} />}
+      <button className="film-skip" type="button" onClick={() => setSceneIndex(scenes.length - 1)}>Pomiń opowieść</button>
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        className="film-copy"
+        initial={{ opacity: 0, y: 22 }}
+        key={`copy-${scene.asset}`}
+        transition={{ delay: reducedMotion ? 0 : 0.22, duration: reducedMotion ? 0 : 0.55 }}
+      >
+        <span className="eyebrow">{scene.kicker}</span>
+        <h1>{scene.title}</h1>
+        <p>{scene.copy}</p>
+        {scene.href && <Link href={scene.href}>{sceneIndex === 0 || sceneIndex === scenes.length - 1 ? 'ODKRYJ KOLEKCJĘ' : 'ZOBACZ PRODUKT'} <span aria-hidden="true">↗</span></Link>}
+      </motion.div>
+      <div className="film-nav" aria-label="Sterowanie opowieścią">
+        <button aria-label="Poprzednia scena" disabled={sceneIndex === 0} onClick={() => go(-1)} type="button">←</button>
+        <i>{String(sceneIndex + 1).padStart(2, '0')} / {scenes.length}</i>
+        <button aria-label="Następna scena" disabled={sceneIndex === scenes.length - 1} onClick={() => go(1)} type="button">→</button>
+      </div>
+    </section>
+  );
+}
