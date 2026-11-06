@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { InteractiveCandleFlame } from './InteractiveCandleFlame';
+import { useLocale } from '@/components/locale';
 
 type Scene = {
   kicker: string;
@@ -29,8 +30,11 @@ const scenes: Scene[] = [
   { kicker: 'WINTER AMBER', title: 'Ciepło zamknięte w bursztynowym szkle.', copy: 'Koncept świecy sojowej na długie zimowe wieczory.', asset: 'product-amber', href: '/produkt/winter-amber', ambient: 'glow', flame: true, flamePosition: 'amber' },
   { kicker: 'ATELIER ŚWIEC', title: 'Zatrzymaj światło na dłużej.', copy: 'Ręcznie tworzone świece na chwile, które zostają z nami.', asset: 'final-light', href: '/sklep', ambient: 'glow', flame: true, flamePosition: 'final', smoke: true },
 ];
+const ruScenes: Array<Pick<Scene,'kicker'|'title'|'copy'>> = [
+{kicker:'ATELIER ŚWIEC',title:'Каждое мгновение заслуживает своего света.',copy:'Первый свет Winter Amber согревает зимний вечер.'},{kicker:'6 ДЕКАБРЯ · МИКОЛАЙКИ',title:'Аромат пряников, перед которым не устоит даже Святой Николай.',copy:'Праздничная история о маленьких подарках и большой радости.'},{kicker:'24 ДЕКАБРЯ · СОЧЕЛЬНИК',title:'Свет, который объединяет за одним столом.',copy:'Тёплый свет свечей сопровождает самые важные разговоры.'},{kicker:'25–26 ДЕКАБРЯ · РОЖДЕСТВО',title:'У самых красивых мгновений есть свой свет.',copy:'Утро с ароматом ёлки, подарков и спокойствия.'},{kicker:'14 ФЕВРАЛЯ · ДЕНЬ ВЛЮБЛЁННЫХ',title:'У любви есть собственное сияние.',copy:'Концепция будущей коллекции для мгновений, которые хочется сохранить.'},{kicker:'8 МАРТА · ЖЕНСКИЙ ДЕНЬ',title:'Аромат, который говорит больше тысячи слов.',copy:'Цветы, свет и жест, который помнят долго.'},{kicker:'РОЖДЕСТВЕНСКАЯ КОЛЛЕКЦИЯ',title:'Свеча Ёлка 3D',copy:'Декоративная форма для зимних ритуалов.'},{kicker:'РОЖДЕСТВЕНСКАЯ КОЛЛЕКЦИЯ',title:'Пряничный человечек',copy:'Праздничная деталь, наполненная теплом и мягким светом.'},{kicker:'WINTER AMBER',title:'Тепло, заключённое в янтарное стекло.',copy:'Концепт соевой свечи для долгих зимних вечеров.'},{kicker:'ATELIER ŚWIEC',title:'Сохраните свет надолго.',copy:'Свечи ручной работы для мгновений, которые остаются с нами.'}];
 
 export default function CinematicExperience() {
+  const {locale}=useLocale();
   const [sceneIndex, setSceneIndex] = useState(0);
   const wheelSum = useRef(0);
   const isTransitioning = useRef(false);
@@ -67,7 +71,7 @@ export default function CinematicExperience() {
     return () => { window.removeEventListener('wheel', onWheel); window.removeEventListener('keydown', onKeyDown); };
   }, [go]);
 
-  const scene = scenes[sceneIndex];
+  const scene = {...scenes[sceneIndex],...(locale==='ru'?ruScenes[sceneIndex]:{})};
   return (
     <section
       className={`film film--${scene.ambient}`}
@@ -93,7 +97,7 @@ export default function CinematicExperience() {
       <div className="film-atmosphere" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div>
       {scene.flame && <InteractiveCandleFlame className={`film-flame film-flame--${scene.flamePosition}`} size={82} reducedMotion={Boolean(reducedMotion)} />}
       {scene.smoke && <div className="fragrance-wisps" aria-hidden="true"><i /><i /><i /></div>}
-      <button className="film-skip" type="button" onClick={() => setSceneIndex(scenes.length - 1)}>Pomiń opowieść</button>
+      <button className="film-skip" type="button" onClick={() => setSceneIndex(scenes.length - 1)}>{locale==='ru'?'Пропустить историю':'Pomiń opowieść'}</button>
       <motion.div
         animate={{ opacity: 1, y: 0 }}
         className="film-copy"
@@ -104,7 +108,7 @@ export default function CinematicExperience() {
         <span className="eyebrow">{scene.kicker}</span>
         <h1>{scene.title}</h1>
         <p>{scene.copy}</p>
-        {scene.href && <Link href={scene.href}>{sceneIndex === 0 || sceneIndex === scenes.length - 1 ? 'ODKRYJ KOLEKCJĘ' : 'ZOBACZ PRODUKT'} <span aria-hidden="true">↗</span></Link>}
+        {scene.href && <Link href={scene.href}>{sceneIndex === 0 || sceneIndex === scenes.length - 1 ? (locale==='ru'?'ОТКРЫТЬ КОЛЛЕКЦИЮ':'ODKRYJ KOLEKCJĘ') : (locale==='ru'?'СМОТРЕТЬ ТОВАР':'ZOBACZ PRODUKT')} <span aria-hidden="true">↗</span></Link>}
       </motion.div>
       <div className="film-nav" aria-label="Sterowanie opowieścią">
         <button aria-label="Poprzednia scena" disabled={sceneIndex === 0} onClick={() => go(-1)} type="button">←</button>
