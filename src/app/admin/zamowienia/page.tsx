@@ -1,0 +1,3 @@
+import Link from 'next/link';
+import { requireAdmin } from '@/lib/admin-auth';
+export default async function Orders(){const {client}=await requireAdmin();const {data:orders}=await client.from('orders').select('id,order_number,email,total_grosz,fulfillment_status,manual_payment_status,created_at').order('created_at',{ascending:false});return <main className="wrap product-page-dark"><span className="eyebrow">ATELIER ŚWIEC</span><h1 className="serif">Zamówienia</h1><div className="admin-table">{orders?.map(o=><Link key={o.id} href={`/admin/zamowienia/${o.id}`}>#{o.order_number} · {o.email} · {(o.total_grosz/100).toFixed(2)} zł · {o.fulfillment_status} · {o.manual_payment_status}</Link>) ?? <p>Brak zamówień.</p>}</div></main>}

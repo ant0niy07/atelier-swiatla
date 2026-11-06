@@ -75,6 +75,7 @@ body { background:var(--night); color:var(--paper); }
 .checkout-total { margin:0; border-bottom:0; }
 .checkout-total.muted { color:rgba(247,238,224,.65); }
 .checkout-status { margin-top:16px; color:var(--gold); line-height:1.5; }
+.admin-table { display:grid; gap:10px; max-width:900px; }.admin-table a { padding:16px; border:1px solid var(--line); background:rgba(255,255,255,.04); }
 
 .overlay { position:fixed; z-index:90; inset:0; border:0; background:rgba(0,0,0,.62); backdrop-filter:blur(5px); cursor:default; }
 .drawer { position:fixed; z-index:91; top:0; right:0; width:min(440px,100%); height:100dvh; overflow:auto; padding:26px; color:var(--paper); background:linear-gradient(135deg,#21100f,#100909); border-left:1px solid rgba(212,175,114,.35); box-shadow:-25px 0 60px rgba(0,0,0,.35); }
