@@ -41,7 +41,6 @@ export default function Checkout() {
       <section>
         <span className="eyebrow">Dane zamówienia</span>
         <h1 className="serif">Podsumowanie</h1>
-        <div className="notice"><strong>Finalizacja zamówienia jest jeszcze zablokowana.</strong> Koszyk działa, jednak przyjęcie zamówienia wymaga potwierdzonych stanów magazynowych, cen, dostawy, płatności i konfiguracji Supabase.</div>
         {fields.map(([name, label]) => (
           <label className="field" key={name}>{label}
             <input autoComplete={name === 'email' ? 'email' : undefined} name={name} required type={name === 'email' ? 'email' : name === 'phone' ? 'tel' : 'text'} />
