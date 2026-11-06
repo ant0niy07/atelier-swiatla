@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import './luxury.css';
 import { Cart, Footer, Header } from '@/components/site';
+import { LocaleProvider } from '@/components/locale';
 
 export const metadata: Metadata = {
   title: 'ATELIER ŚWIEC | Kolekcja Świąteczna',
@@ -19,11 +20,11 @@ export const metadata: Metadata = {
 export default function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pl">
-      <body>
+      <body><LocaleProvider>
         <Header />
         <main>{children}</main>
         <Footer />
-        <Cart />
+        <Cart /></LocaleProvider>
       </body>
     </html>
   );

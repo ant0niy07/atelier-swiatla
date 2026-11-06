@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ShoppingBag, X } from 'lucide-react';
 import { formatPrice, products, Product } from '@/data/products';
 import { useCart } from '@/stores/cart-store';
+import { LanguageSwitch, useLocale } from '@/components/locale';
 
 const artByTone: Record<Product['imageTone'], string> = {
   tree: '/cinematic/product-tree.png',
@@ -13,6 +14,7 @@ const artByTone: Record<Product['imageTone'], string> = {
 };
 
 export function Header() {
+  const {locale}=useLocale();
   const count = useCart((state) => state.items.reduce((sum, item) => sum + item.quantity, 0));
   const setOpen = useCart((state) => state.setOpen);
 
@@ -23,10 +25,10 @@ export function Header() {
           ATELIER ŚWIEC
         </Link>
         <nav aria-label="Główna nawigacja">
-          <Link href="/sklep">Kolekcja</Link>
-          <Link href="/kontakt">Kontakt</Link>
+          <Link href="/sklep">{locale==='ru'?'Коллекция':'Kolekcja'}</Link>
+          <Link href="/kontakt">{locale==='ru'?'Контакты':'Kontakt'}</Link>
         </nav>
-        <button className="cart-btn" type="button" onClick={() => setOpen(true)} aria-label="Otwórz koszyk">
+        <LanguageSwitch /><button className="cart-btn" type="button" onClick={() => setOpen(true)} aria-label={locale==='ru'?'Открыть корзину':'Otwórz koszyk'}>
           <ShoppingBag aria-hidden="true" size={19} />
           {count > 0 && <span>{count}</span>}
         </button>
@@ -36,6 +38,7 @@ export function Header() {
 }
 
 export function Cart() {
+  const {locale}=useLocale();
   const { items, open, setOpen, change, remove } = useCart();
   const lines = items
     .map((item) => ({ item, product: products.find((product) => product.id === item.productId) }))
@@ -46,7 +49,7 @@ export function Cart() {
 
   return (
     <>
-      <button className="overlay" type="button" onClick={() => setOpen(false)} aria-label="Zamknij koszyk" />
+      <button className="overlay" type="button" onClick={() => setOpen(false)} aria-label={locale==='ru'?'Закрыть корзину':'Zamknij koszyk'} />
       <aside className="drawer" aria-label="Twój koszyk" aria-modal="true" role="dialog">
         <div className="drawer-top">
           <p className="eyebrow">ATELIER ŚWIEC</p>
@@ -54,9 +57,9 @@ export function Cart() {
             <X size={20} />
           </button>
         </div>
-        <h2 className="serif">Twój koszyk</h2>
+        <h2 className="serif">{locale==='ru'?'Корзина':'Twój koszyk'}</h2>
         {lines.length === 0 ? (
-          <p className="drawer-empty">Twój koszyk jest pusty.</p>
+          <p className="drawer-empty">{locale==='ru'?'Ваша корзина пуста.':'Twój koszyk jest pusty.'}</p>
         ) : (
           <>
             <div className="drawer-lines">
@@ -70,13 +73,13 @@ export function Cart() {
                     <button type="button" onClick={() => change(product.id, item.variantId, item.quantity - 1)} aria-label="Zmniejsz ilość">−</button>
                     <span aria-label={`Ilość: ${item.quantity}`}>{item.quantity}</span>
                     <button type="button" onClick={() => change(product.id, item.variantId, item.quantity + 1)} aria-label="Zwiększ ilość">+</button>
-                    <button className="remove-line" type="button" onClick={() => remove(product.id, item.variantId)}>Usuń</button>
+                    <button className="remove-line" type="button" onClick={() => remove(product.id, item.variantId)}>{locale==='ru'?'Удалить':'Usuń'}</button>
                   </div>
                 </div>
               ))}
             </div>
-            <p className="drawer-total"><span>Suma częściowa</span><strong>{formatPrice(total)}</strong></p>
-            <Link className="btn drawer-checkout" href="/checkout" onClick={() => setOpen(false)}>Przejdź do podsumowania</Link>
+            <p className="drawer-total"><span>{locale==='ru'?'Сумма товаров':'Suma częściowa'}</span><strong>{formatPrice(total)}</strong></p>
+            <Link className="btn drawer-checkout" href="/checkout" onClick={() => setOpen(false)}>{locale==='ru'?'Перейти к оформлению':'Przejdź do podsumowania'}</Link>
           </>
         )}
       </aside>
@@ -113,11 +116,12 @@ export function ProductCard({ product }: { product: Product }) {
 }
 
 export function Footer() {
+  const {locale}=useLocale();
   return (
     <footer className="footer">
       <div className="wrap footer-grid">
         <Link className="brand" href="/">ATELIER ŚWIEC</Link>
-        <p>Światło dla wyjątkowych zimowych chwil. <Link className="admin-footer-link" href="/admin/login">Panel administracyjny</Link></p>
+        <p>{locale==='ru'?'Свет для особенных зимних мгновений.':'Światło dla wyjątkowych zimowych chwil.'} <Link className="admin-footer-link" href="/admin/login">{locale==='ru'?'Администрирование':'Panel administracyjny'}</Link></p>
       </div>
     </footer>
   );
