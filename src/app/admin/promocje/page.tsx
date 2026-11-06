@@ -1,0 +1,2 @@
+import { requireAdmin } from '@/lib/admin-auth';
+export default async function Promotions(){const {client}=await requireAdmin();const {data}=await client.from('promotions').select('id,code,kind,value,active,used_count,usage_limit,ends_at').order('created_at',{ascending:false});return <main className="wrap product-page-dark"><span className="eyebrow">Rabaty</span><h1 className="serif">Promocje</h1>{data?.map(p=><p key={p.id}>{p.code} · {p.kind} · {p.value} · {p.active?'aktywna':'wyłączona'} · użyto {p.used_count}</p>)}</main>}

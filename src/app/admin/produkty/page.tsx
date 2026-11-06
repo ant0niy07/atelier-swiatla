@@ -1,0 +1,2 @@
+import { requireAdmin } from '@/lib/admin-auth';
+export default async function Products(){const {client}=await requireAdmin();const {data}=await client.from('products').select('id,name,sku,price_grosz,stock_on_hand,made_to_order,status').order('name');return <main className="wrap product-page-dark"><span className="eyebrow">Asortyment</span><h1 className="serif">Produkty</h1>{data?.map(p=><p key={p.id}>{p.name} · {(p.price_grosz/100).toFixed(2)} zł · {p.made_to_order?'na zamówienie':`stan: ${p.stock_on_hand}`} · {p.status}</p>)}</main>}

@@ -1,0 +1,2 @@
+import { requireAdmin } from '@/lib/admin-auth';
+export default async function Delivery(){const {client}=await requireAdmin();const {data}=await client.from('delivery_methods').select('id,label,kind,rate_grosz,active,supports_cod,description,service_area,available_days').order('label');return <main className="wrap product-page-dark"><span className="eyebrow">Konfiguracja</span><h1 className="serif">Dostawa</h1>{data?.map(d=><p key={d.id}>{d.label} · {d.rate_grosz===null?'brak ceny':`${(d.rate_grosz/100).toFixed(2)} zł`} · {d.active?'aktywna':'wyłączona'}</p>)}</main>}
