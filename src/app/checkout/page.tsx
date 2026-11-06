@@ -1,2 +1,51 @@
-export const metadata={robots:{index:false,follow:false}};
-export default function Checkout(){return <div className="wrap checkout"><section><span className="eyebrow">Krok 1 z 2</span><h1 className="serif" style={{fontSize:58}}>Dane zamówienia</h1><div className="notice"><strong>Sprzedaż pozostaje wyłączona.</strong> Formularz jest wizualnym przygotowaniem do przyszłego, bezpiecznego checkoutu.</div>{['Imię','Nazwisko','Adres e-mail','Numer telefonu','Ulica','Numer budynku','Numer lokalu','Kod pocztowy','Miasto'].map(x=><label className="field" key={x}>{x}<input disabled placeholder="Wkrótce"/></label>)}</section><aside className="summary"><h2 className="serif" style={{fontSize:35,marginTop:0}}>Podsumowanie</h2><p>Po uruchomieniu zamówienia będą walidowane po stronie serwera, wraz z cenami, dostępnością oraz metodą dostawy.</p><button className="btn" disabled>Zamawiam i płacę</button></aside></div>}
+'use client';
+
+import { FormEvent, useMemo, useState } from 'react';
+import { formatPrice, products } from '@/data/products';
+import { useCart } from '@/stores/cart-store';
+
+const fields = [
+  ['firstName', 'Imię'], ['lastName', 'Nazwisko'], ['email', 'Adres e-mail'], ['phone', 'Numer telefonu'],
+  ['street', 'Ulica i numer'], ['postalCode', 'Kod pocztowy'], ['city', 'Miasto'],
+] as const;
+
+export default function Checkout() {
+  const items = useCart((state) => state.items);
+  const [attempted, setAttempted] = useState(false);
+  const lines = useMemo(() => items.map((item) => ({ item, product: products.find((product) => product.id === item.productId) })).filter((line): line is { item: typeof items[number]; product: typeof products[number] } => Boolean(line.product)), [items]);
+  const subtotal = lines.reduce((sum, line) => sum + line.item.quantity * line.product.price, 0);
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setAttempted(true);
+  };
+
+  return (
+    <form className="wrap checkout checkout-dark" onSubmit={submit}>
+      <section>
+        <span className="eyebrow">Dane zamówienia</span>
+        <h1 className="serif">Podsumowanie</h1>
+        <div className="notice"><strong>Finalizacja zamówienia jest jeszcze zablokowana.</strong> Koszyk działa, jednak przyjęcie zamówienia wymaga potwierdzonych stanów magazynowych, cen, dostawy, płatności i konfiguracji Supabase.</div>
+        {fields.map(([name, label]) => (
+          <label className="field" key={name}>{label}
+            <input autoComplete={name === 'email' ? 'email' : undefined} name={name} required type={name === 'email' ? 'email' : name === 'phone' ? 'tel' : 'text'} />
+          </label>
+        ))}
+        <label className="field">Metoda dostawy
+          <select defaultValue="pending" name="shipping" required><option value="pending">Wybór dostawy po uruchomieniu sprzedaży</option></select>
+        </label>
+        <button className="btn" type="submit">Przejdź do potwierdzenia</button>
+        {attempted && <p className="checkout-status" role="status">Nie można jeszcze złożyć zamówienia. Nie pobrano płatności ani nie utworzono zamówienia.</p>}
+      </section>
+      <aside className="summary">
+        <h2 className="serif">Twój koszyk</h2>
+        {lines.length === 0 ? <p>Koszyk jest pusty.</p> : lines.map(({ item, product }) => {
+          const variant = product.variants?.find((entry) => entry.id === item.variantId);
+          return <p className="checkout-line" key={`${product.id}-${item.variantId ?? 'standard'}`}><span>{product.name} × {item.quantity}{variant && <small>{variant.name}</small>}</span><strong>{formatPrice(product.price * item.quantity)}</strong></p>;
+        })}
+        <p className="checkout-total"><span>Wartość produktów</span><strong>{formatPrice(subtotal)}</strong></p>
+        <p className="checkout-total muted"><span>Dostawa</span><strong>Do potwierdzenia</strong></p>
+      </aside>
+    </form>
+  );
+}

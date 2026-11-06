@@ -13,19 +13,21 @@ type Scene = {
   href?: string;
   ambient: 'snow' | 'petals' | 'glow' | 'sparkles';
   flame?: boolean;
+  flamePosition?: string;
+  smoke?: boolean;
 };
 
 const scenes: Scene[] = [
-  { kicker: 'ATELIER ŚWIEC', title: 'Każda chwila zasługuje na swoje światło.', copy: 'Pierwsze światło Winter Amber rozgrzewa zimowy wieczór.', asset: 'first-light', href: '/sklep', ambient: 'glow', flame: true },
+  { kicker: 'ATELIER ŚWIEC', title: 'Każda chwila zasługuje na swoje światło.', copy: 'Pierwsze światło Winter Amber rozgrzewa zimowy wieczór.', asset: 'first-light', href: '/sklep', ambient: 'glow', flame: true, flamePosition: 'first-light' },
   { kicker: '6 GRUDNIA · MIKOŁAJKI', title: 'Zapach piernika, któremu nie oprze się nawet Święty Mikołaj.', copy: 'Świąteczna opowieść o małych prezentach i wielkiej radości.', asset: 'mikolajki', href: '/produkt/piernikowy-ludzik', ambient: 'snow' },
   { kicker: '24 GRUDNIA · WIGILIA', title: 'Światło, które łączy przy jednym stole.', copy: 'Ciepłe światło świec towarzyszy najważniejszym rozmowom.', asset: 'wigilia', ambient: 'snow' },
   { kicker: '25–26 GRUDNIA · BOŻE NARODZENIE', title: 'Najpiękniejsze chwile mają własne światło.', copy: 'Poranek pachnący choinką, prezentami i spokojem.', asset: 'christmas-morning', ambient: 'snow' },
   { kicker: '14 LUTEGO · WALENTYNKI', title: 'Miłość ma swój własny blask.', copy: 'Koncepcja przyszłej kolekcji dla chwil, które chce się zatrzymać.', asset: 'valentines', ambient: 'petals' },
   { kicker: '8 MARCA · DZIEŃ KOBIET', title: 'Zapach, który mówi więcej niż tysiąc słów.', copy: 'Kwiaty, światło i gest pamiętany na długo.', asset: 'womens-day', ambient: 'petals' },
-  { kicker: 'KOLEKCJA ŚWIĄTECZNA', title: 'Świeca Choinka 3D', copy: 'Ręcznie formowana dekoracja dla zimowych rytuałów.', asset: 'product-tree', href: '/produkt/swieca-choinka-3d', ambient: 'snow', flame: true },
+  { kicker: 'KOLEKCJA ŚWIĄTECZNA', title: 'Świeca Choinka 3D', copy: 'Ręcznie formowana dekoracja dla zimowych rytuałów.', asset: 'product-tree', href: '/produkt/swieca-choinka-3d', ambient: 'snow', flame: true, flamePosition: 'tree' },
   { kicker: 'KOLEKCJA ŚWIĄTECZNA', title: 'Piernikowy Ludzik', copy: 'Świąteczny detal pełen ciepła i miękkiego światła.', asset: 'product-ginger', href: '/produkt/piernikowy-ludzik', ambient: 'sparkles' },
-  { kicker: 'WINTER AMBER', title: 'Ciepło zamknięte w bursztynowym szkle.', copy: 'Koncept świecy sojowej na długie zimowe wieczory.', asset: 'product-amber', href: '/produkt/winter-amber', ambient: 'glow', flame: true },
-  { kicker: 'ATELIER ŚWIEC', title: 'Zatrzymaj światło na dłużej.', copy: 'Ręcznie tworzone świece na chwile, które zostają z nami.', asset: 'final-light', href: '/sklep', ambient: 'glow', flame: true },
+  { kicker: 'WINTER AMBER', title: 'Ciepło zamknięte w bursztynowym szkle.', copy: 'Koncept świecy sojowej na długie zimowe wieczory.', asset: 'product-amber', href: '/produkt/winter-amber', ambient: 'glow', flame: true, flamePosition: 'amber' },
+  { kicker: 'ATELIER ŚWIEC', title: 'Zatrzymaj światło na dłużej.', copy: 'Ręcznie tworzone świece na chwile, które zostają z nami.', asset: 'final-light', href: '/sklep', ambient: 'glow', flame: true, flamePosition: 'final', smoke: true },
 ];
 
 export default function CinematicExperience() {
@@ -89,7 +91,8 @@ export default function CinematicExperience() {
         />
       </AnimatePresence>
       <div className="film-atmosphere" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div>
-      {scene.flame && <InteractiveCandleFlame className="film-flame" size={82} reducedMotion={Boolean(reducedMotion)} />}
+      {scene.flame && <InteractiveCandleFlame className={`film-flame film-flame--${scene.flamePosition}`} size={82} reducedMotion={Boolean(reducedMotion)} />}
+      {scene.smoke && <div className="fragrance-wisps" aria-hidden="true"><i /><i /><i /></div>}
       <button className="film-skip" type="button" onClick={() => setSceneIndex(scenes.length - 1)}>Pomiń opowieść</button>
       <motion.div
         animate={{ opacity: 1, y: 0 }}
