@@ -117,7 +117,7 @@ export function Footer() {
     <footer className="footer">
       <div className="wrap footer-grid">
         <Link className="brand" href="/">ATELIER ŚWIEC</Link>
-        <p>Światło dla wyjątkowych zimowych chwil.</p>
+        <p>Światło dla wyjątkowych zimowych chwil. <Link className="admin-footer-link" href="/admin/login">Panel administracyjny</Link></p>
       </div>
     </footer>
   );
