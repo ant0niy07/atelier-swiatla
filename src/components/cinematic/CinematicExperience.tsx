@@ -19,7 +19,7 @@ const scenes: Scene[] = [
   { kicker: 'ATELIER ŚWIEC', title: 'Każda chwila zasługuje na swoje światło.', copy: 'Pierwsze światło Winter Amber rozgrzewa zimowy wieczór.', asset: 'first-light', href: '/sklep', ambient: 'glow', flame: true },
   { kicker: '6 GRUDNIA · MIKOŁAJKI', title: 'Zapach piernika, któremu nie oprze się nawet Święty Mikołaj.', copy: 'Świąteczna opowieść o małych prezentach i wielkiej radości.', asset: 'mikolajki', href: '/produkt/piernikowy-ludzik', ambient: 'snow' },
   { kicker: '24 GRUDNIA · WIGILIA', title: 'Światło, które łączy przy jednym stole.', copy: 'Ciepłe światło świec towarzyszy najważniejszym rozmowom.', asset: 'wigilia', ambient: 'snow' },
-  { kicker: '25–26 GRUDNIA · BOŻE NARODZENIE', title: 'Najpiękniejsze chwile mają własne światło.', copy: 'Poranek pachnący choinką, prezentami i spokojem.', asset: 'christmas-morning', ambient: 'sparkles' },
+  { kicker: '25–26 GRUDNIA · BOŻE NARODZENIE', title: 'Najpiękniejsze chwile mają własne światło.', copy: 'Poranek pachnący choinką, prezentami i spokojem.', asset: 'christmas-morning', ambient: 'snow' },
   { kicker: '14 LUTEGO · WALENTYNKI', title: 'Miłość ma swój własny blask.', copy: 'Koncepcja przyszłej kolekcji dla chwil, które chce się zatrzymać.', asset: 'valentines', ambient: 'petals' },
   { kicker: '8 MARCA · DZIEŃ KOBIET', title: 'Zapach, który mówi więcej niż tysiąc słów.', copy: 'Kwiaty, światło i gest pamiętany na długo.', asset: 'womens-day', ambient: 'petals' },
   { kicker: 'KOLEKCJA ŚWIĄTECZNA', title: 'Świeca Choinka 3D', copy: 'Ręcznie formowana dekoracja dla zimowych rytuałów.', asset: 'product-tree', href: '/produkt/swieca-choinka-3d', ambient: 'snow', flame: true },
@@ -80,7 +80,7 @@ export default function CinematicExperience() {
       <AnimatePresence mode="wait">
         <motion.div
           animate={{ opacity: 1, scale: 1 }}
-          className="film-image"
+          className={`film-image film-image--${scene.asset}`}
           exit={{ opacity: 0, scale: 1.03 }}
           initial={{ opacity: 0, scale: 1.06 }}
           key={scene.asset}

@@ -72,9 +72,14 @@ body { background:var(--night); color:var(--paper); }
 
 .film { position:relative; height:100svh; min-height:620px; overflow:hidden; color:var(--paper); background:#120a09; isolation:isolate; }
 .film-image { position:absolute; z-index:-3; inset:0; background-position:center; background-size:cover; will-change:opacity,transform; }
+.film-image--mikolajki { background-position:65% center; }
+.film-image--product-tree { background-position:58% center; }
+.film-image--product-ginger { background-position:60% center; }
+.film-image--product-amber { background-position:62% center; }
+.film-image--final-light { background-position:62% center; }
 .film::after { content:''; position:absolute; z-index:-2; inset:0; pointer-events:none; background:linear-gradient(90deg,rgba(15,7,7,.94),rgba(19,8,8,.62) 40%,rgba(12,5,5,.08) 76%),linear-gradient(0deg,rgba(8,4,4,.7),transparent 50%); }
-.film-copy { position:absolute; z-index:4; left:max(7vw,28px); bottom:14vh; width:min(450px,calc(100vw - 56px)); }
-.film-copy h1 { margin:15px 0 17px; font:500 clamp(48px,6.5vw,96px)/.88 'Cormorant Garamond',serif; letter-spacing:-.045em; }
+.film-copy { position:absolute; z-index:4; left:max(7vw,28px); bottom:clamp(88px,14vh,150px); width:min(430px,calc(100vw - 56px)); max-height:calc(100svh - 190px); overflow:auto; }
+.film-copy h1 { margin:15px 0 17px; font:500 clamp(42px,5.55vw,82px)/.92 'Cormorant Garamond',serif; letter-spacing:-.045em; overflow-wrap:anywhere; }
 .film-copy p { max-width:390px; margin:0; color:rgba(247,238,224,.86); line-height:1.65; }
 .film-copy a { display:inline-flex; gap:13px; margin-top:25px; padding:13px 16px; border:1px solid var(--gold); color:var(--paper); font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; transition:background .25s,color .25s; }
 .film-copy a:hover { color:#20100d; background:var(--gold); }
@@ -94,5 +99,6 @@ body { background:var(--night); color:var(--paper); }
 @keyframes atmosphere-float { from{transform:translate3d(0,-8vh,0) rotate(0);opacity:0} 12%{opacity:.75} to{transform:translate3d(38px,88vh,0) rotate(220deg);opacity:0} }
 
 @media (max-width:900px) { .products.luxury-products { grid-template-columns:repeat(2,minmax(0,1fr)); } .product-page { grid-template-columns:1fr; } }
-@media (max-width:640px) { .header-inner { min-height:68px; grid-template-columns:1fr auto; gap:12px; } .site-header nav { display:none; } .brand { font-size:11px !important; } .shop-dark { padding-top:112px; } .catalog-head h1 { font-size:clamp(3.25rem,15vw,5.4rem); } .products.luxury-products { grid-template-columns:1fr; } .product-art { min-height:300px; } .product-page-dark,.legal { padding-top:105px; } .drawer { padding:20px; } .footer-grid { display:block; } .footer p { margin-top:16px; } .film-copy { bottom:112px; } .film-copy h1 { font-size:clamp(44px,13vw,66px); } .film-flame { right:23%; bottom:32%; transform:scale(.72); } .film-skip { top:86px; right:16px; } .film-nav { right:16px; bottom:16px; } }
+@media (max-width:640px) { .header-inner { min-height:68px; grid-template-columns:1fr auto; gap:12px; } .site-header nav { display:none; } .brand { font-size:11px !important; } .shop-dark { padding-top:112px; } .catalog-head h1 { font-size:clamp(3.25rem,15vw,5.4rem); } .products.luxury-products { grid-template-columns:1fr; } .product-art { min-height:300px; } .product-page-dark,.legal { padding-top:105px; } .drawer { padding:20px; } .footer-grid { display:block; } .footer p { margin-top:16px; } .film-copy { left:22px; bottom:96px; width:calc(100vw - 44px); max-height:calc(100svh - 180px); } .film-copy h1 { font-size:clamp(38px,11vw,55px); line-height:.94; } .film-copy p { font-size:13px; } .film-flame { right:23%; bottom:32%; transform:scale(.72); } .film-skip { top:86px; right:16px; } .film-nav { right:16px; bottom:16px; } .film-image--mikolajki,.film-image--product-tree,.film-image--product-ginger,.film-image--product-amber,.film-image--final-light { background-position:62% center; } }
+@media (max-height:700px) and (min-width:641px) { .film-copy { bottom:74px; max-width:380px; } .film-copy h1 { font-size:clamp(38px,5vw,62px); } .film-copy p { font-size:13px; } .film-skip { top:88px; } }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition-duration:.01ms!important; animation-duration:.01ms!important; animation-iteration-count:1!important; } }
