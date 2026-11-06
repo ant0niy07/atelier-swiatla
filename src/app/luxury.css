@@ -2,11 +2,12 @@
 
 body { background:var(--night); color:var(--paper); }
 .site-header { position:absolute !important; inset:0 0 auto; z-index:50; color:var(--paper); background:linear-gradient(180deg,rgba(11,6,6,.72),transparent) !important; }
-.header-inner { min-height:84px; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:28px; }
+.header-inner { min-height:76px; display:grid; grid-template-columns:minmax(150px,1fr) auto minmax(210px,1fr); align-items:center; gap:28px; }
 .brand { letter-spacing:.16em; font-size:13px !important; font-weight:700; white-space:nowrap; color:inherit; }
 .site-header nav { display:flex; gap:24px; font-size:11px; letter-spacing:.12em; text-transform:uppercase; }
 .site-header nav a { color:inherit; }
-.cart-btn { justify-self:end; display:inline-flex; align-items:center; justify-content:center; gap:7px; min-width:42px; min-height:42px; padding:0; line-height:0; border:1px solid var(--line); color:inherit; background:rgba(20,10,10,.22); border-radius:50%; cursor:pointer; }.cart-btn svg{display:block;flex:none}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:12px;white-space:nowrap}.cart-btn{position:relative;display:grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;margin:0;line-height:0;border:1px solid var(--gold);color:inherit;background:rgba(48,14,19,.76);border-radius:50%;cursor:pointer}.cart-btn svg{display:block;width:19px;height:19px;margin:0;transform:none}.cart-count{position:absolute;right:-4px;top:-4px;display:grid;place-items:center;min-width:16px;height:16px;padding:0 3px;border-radius:50%;background:var(--gold);color:#210d0d;font:700 9px/16px Manrope}
+.language-switch{display:flex;gap:5px}.language-switch button{height:30px;padding:0 8px;border:1px solid rgba(212,175,114,.52);border-radius:5px;background:rgba(62,17,24,.78);color:var(--paper);font:600 10px Manrope;cursor:pointer}.language-switch button[aria-pressed=true]{border-color:var(--gold);color:var(--gold);background:rgba(212,175,114,.14)}
 
 .shop-dark { position:relative; isolation:isolate; min-height:100vh; overflow:hidden; padding:150px 0 100px; color:var(--paper); background:var(--night); }
 .shop-bg { position:absolute; z-index:-1; inset:0; background:linear-gradient(180deg,rgba(14,6,7,.62),rgba(14,6,7,.95) 58%,#110a0a),url('/cinematic/collection-bg.png') center / cover; }
@@ -76,7 +77,7 @@ body { background:var(--night); color:var(--paper); }
 .checkout-total.muted { color:rgba(247,238,224,.65); }
 .checkout-status { margin-top:16px; color:var(--gold); line-height:1.5; }
 .admin-table { display:grid; gap:10px; max-width:900px; }.admin-table a { padding:16px; border:1px solid var(--line); background:rgba(255,255,255,.04); }
-.admin-footer-link{margin-left:16px;color:rgba(247,238,224,.38);font-size:10px}.admin-footer-link:hover{color:var(--gold)}
+.footer-copyright{font-size:10px!important;letter-spacing:.08em}.footer-copyright a{color:inherit}.footer-copyright a:focus-visible{outline:1px solid var(--gold);outline-offset:3px}
 .admin-login{min-height:100svh;display:grid;place-items:center;padding:100px 20px;background:radial-gradient(circle at 50% 0,#3a1718,var(--night) 56%)}.admin-login-card{width:min(100%,440px);padding:38px;border:1px solid rgba(212,175,114,.34);background:rgba(18,8,8,.82);box-shadow:0 28px 80px #0008}.admin-login-card h1{margin:12px 0 32px;font-size:48px}.admin-login-card label{display:grid;gap:8px;margin:16px 0;color:var(--paper);font-size:12px}.admin-login-card input{width:100%;padding:13px;border:1px solid rgba(212,175,114,.42);background:#190d0c;color:var(--paper);caret-color:var(--gold);font:16px Manrope}.admin-login-card input:focus{outline:1px solid var(--gold);border-color:var(--gold)}.admin-login-card input:-webkit-autofill{-webkit-text-fill-color:var(--paper);-webkit-box-shadow:0 0 0 1000px #190d0c inset}.password-field{position:relative}.password-field button{position:absolute;right:8px;top:8px;border:0;background:transparent;color:var(--gold);font-size:11px;cursor:pointer}.admin-login-card .btn{width:100%;margin-top:16px}
 
 .overlay { position:fixed; z-index:90; inset:0; border:0; background:rgba(0,0,0,.62); backdrop-filter:blur(5px); cursor:default; }

@@ -28,10 +28,10 @@ export function Header() {
           <Link href="/sklep">{locale==='ru'?'Коллекция':'Kolekcja'}</Link>
           <Link href="/kontakt">{locale==='ru'?'Контакты':'Kontakt'}</Link>
         </nav>
-        <LanguageSwitch /><button className="cart-btn" type="button" onClick={() => setOpen(true)} aria-label={locale==='ru'?'Открыть корзину':'Otwórz koszyk'}>
+        <div className="header-actions"><LanguageSwitch /><button className="cart-btn" type="button" onClick={() => setOpen(true)} aria-label={locale==='ru'?'Открыть корзину':'Otwórz koszyk'}>
           <ShoppingBag aria-hidden="true" size={19} />
-          {count > 0 && <span>{count}</span>}
-        </button>
+          {count > 0 && <span className="cart-count">{count}</span>}
+        </button></div>
       </div>
     </header>
   );
@@ -121,7 +121,8 @@ export function Footer() {
     <footer className="footer">
       <div className="wrap footer-grid">
         <Link className="brand" href="/">ATELIER ŚWIEC</Link>
-        <p>{locale==='ru'?'Свет для особенных зимних мгновений.':'Światło dla wyjątkowych zimowych chwil.'} <Link className="admin-footer-link" href="/admin/login">{locale==='ru'?'Администрирование':'Panel administracyjny'}</Link></p>
+        <p>{locale==='ru'?'Свет для особенных зимних мгновений.':'Światło dla wyjątkowych zimowych chwil.'}</p>
+        <p className="footer-copyright"><Link href="/admin/login" aria-label={locale==='ru'?'Вход в администрирование':'Wejście do panelu administracyjnego'}>©</Link> 2026 ATELIER ŚWIEC</p>
       </div>
     </footer>
   );
