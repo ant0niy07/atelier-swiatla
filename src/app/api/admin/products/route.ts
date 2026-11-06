@@ -1,9 +1,38 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { requireAdminService } from '@/lib/admin-auth';
 
-const productSchema=z.object({id:z.string().uuid().optional(),name:z.string().min(2),slug:z.string().regex(/^[a-z0-9-]+$/),sku:z.string().min(2),description:z.string(),price_grosz:z.number().int().min(0),stock_on_hand:z.number().int().min(0),made_to_order:z.boolean(),status:z.enum(['draft','published','archived']),category_id:z.string().uuid().nullable().optional(),fragrance:z.string().nullable().optional()});
-async function admin(){const db=getSupabaseAdmin();const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;if(!db||!url||!key)return null;const jar=await cookies();const session=createServerClient(url,key,{cookies:{getAll:()=>jar.getAll(),setAll:()=>{}}});const {data:{user}}=await session.auth.getUser();if(!user)return null;const {data:role}=await db.from('admin_users').select('user_id').eq('user_id',user.id).maybeSingle();return role?db:null}
-export async function POST(request:Request){const db=await admin();if(!db)return NextResponse.json({error:'FORBIDDEN'},{status:403});const parsed=productSchema.safeParse(await request.json());if(!parsed.success)return NextResponse.json({error:'INVALID_PRODUCT'},{status:400});const {id,...product}=parsed.data;const query=id?db.from('products').update(product).eq('id',id):db.from('products').insert(product);const {data,error}=await query.select().single();return error?NextResponse.json({error:'SAVE_FAILED'},{status:400}):NextResponse.json({product:data});}
+const productSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().trim().min(2).max(160),
+  slug: z.string().regex(/^[a-z0-9-]+$/).max(160),
+  sku: z.string().trim().min(2).max(80),
+  description: z.string().max(10_000),
+  price_grosz: z.number().int().min(0).max(10_000_000),
+  stock_on_hand: z.number().int().min(0).max(1_000_000),
+  made_to_order: z.boolean(),
+  status: z.enum(['draft', 'published', 'archived']),
+  category_id: z.string().uuid().nullable().optional(),
+  fragrance: z.string().trim().max(300).nullable().optional(),
+});
+
+export async function POST(request: Request) {
+  let db;
+  try {
+    ({ client: db } = await requireAdminService());
+  } catch {
+    return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  }
+
+  const parsed = productSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: 'INVALID_PRODUCT' }, { status: 400 });
+
+  const { id, ...product } = parsed.data;
+  const query = id
+    ? db.from('products').update(product).eq('id', id)
+    : db.from('products').insert(product);
+  const { data, error } = await query.select().single();
+  return error
+    ? NextResponse.json({ error: 'SAVE_FAILED' }, { status: 400 })
+    : NextResponse.json({ product: data });
+}

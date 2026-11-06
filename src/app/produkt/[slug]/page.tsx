@@ -3,32 +3,38 @@ import { notFound } from 'next/navigation';
 import { AddToCart } from '@/components/AddToCart';
 import { ProductArt } from '@/components/site';
 import { formatPrice, getProduct } from '@/data/products';
+import { getPublishedProduct } from '@/lib/catalog';
 
-export function generateStaticParams() {
-  return ['swieca-choinka-3d', 'piernikowy-ludzik', 'winter-amber', 'winter-mini'].map((slug) => ({ slug }));
-}
+export const dynamic = 'force-dynamic';
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
-  const product = getProduct((await params).slug);
+  const slug = (await params).slug;
+  const product = await getPublishedProduct(slug);
+  const staticProduct = getProduct(slug);
   if (!product) notFound();
 
   return (
     <article className="product-page-dark">
       <div className="wrap product-page">
-        <div className="gallery"><ProductArt large product={product} /></div>
+        <div className="gallery">
+          {staticProduct ? <ProductArt large product={staticProduct} /> : (
+            <div className="product-art product-art-large" role="img" aria-label={`Wizualizacja produktu ${product.name}`} style={product.image_url ? { backgroundImage: `url(${product.image_url})` } : undefined}>
+              {!product.image_url && <span>Zdjęcie w przygotowaniu</span>}
+            </div>
+          )}
+        </div>
         <section className="product-copy">
           <Link className="back-link" href="/sklep">← Wróć do kolekcji</Link>
-          <span className="tag">Kolekcja w przygotowaniu</span>
+          <span className="tag">{product.category?.name ?? 'Kolekcja'}</span>
           <h1 className="serif">{product.name}</h1>
-          <p className="product-price">{formatPrice(product.price)}</p>
+          <p className="product-price">{formatPrice(product.price_grosz)}</p>
           <p className="product-description">{product.description}</p>
-          <AddToCart product={product} />
-          <div className="notice"><strong>Sprzedaż wymaga potwierdzenia.</strong> Ceny, dostępność, dostawa i płatności zostaną potwierdzone przed przyjęciem zamówień.</div>
+          {staticProduct ? <AddToCart product={staticProduct} /> : <div className="notice"><strong>Produkt został opublikowany.</strong> Zakup zostanie udostępniony po skonfigurowaniu wariantów w katalogu.</div>}
           <p className="image-disclaimer">Zdjęcia mają charakter poglądowy. Wygląd produktu może nieznacznie różnić się od przedstawionego na zdjęciu.</p>
           <div className="product-safety">
             <h2 className="serif">Bezpieczeństwo i pielęgnacja</h2>
-            <p>{product.safety}</p>
-            {product.family === 'glass' ? (
+            <p>Przed użyciem zapoznaj się z etykietą bezpieczeństwa dołączoną do produktu.</p>
+            {staticProduct?.family === 'glass' ? (
               <ul className="safety-list">
                 <li>Przy pierwszym paleniu pozwól, aby wosk roztopił się równomiernie do krawędzi naczynia.</li>
                 <li>Przed każdym użyciem przytnij knot do około 5 mm; nie pal świecy dłużej niż 4 godziny jednorazowo.</li>
