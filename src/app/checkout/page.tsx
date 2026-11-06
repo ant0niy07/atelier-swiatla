@@ -32,8 +32,13 @@ export default function Checkout() {
           </label>
         ))}
         <label className="field">Metoda dostawy
-          <select defaultValue="pending" name="shipping" required><option value="pending">Wybór dostawy po uruchomieniu sprzedaży</option></select>
+          <select defaultValue="pending" name="shipping" required><option value="pending">Wybór dostawy po konfiguracji usług</option></select>
         </label>
+        <label className="field">Metoda płatności
+          <select defaultValue="pending" name="payment" required><option value="pending">Wybierz dostawę, aby zobaczyć dostępne płatności</option></select>
+        </label>
+        <label className="field">Kod promocyjny<input name="promotion" placeholder="Opcjonalnie" type="text" /></label>
+        <label className="field">Uwagi do zamówienia<textarea name="note" placeholder="Opcjonalnie" rows={3} /></label>
         <button className="btn" type="submit">Przejdź do potwierdzenia</button>
         {attempted && <p className="checkout-status" role="status">Nie można jeszcze złożyć zamówienia. Nie pobrano płatności ani nie utworzono zamówienia.</p>}
       </section>

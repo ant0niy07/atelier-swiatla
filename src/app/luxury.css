@@ -65,7 +65,8 @@ body { background:var(--night); color:var(--paper); }
 .checkout-dark { min-height:100vh; padding-top:145px; padding-bottom:90px; color:var(--paper); background:transparent; }
 .checkout-dark h1 { margin:12px 0 28px; font-size:clamp(48px,6vw,78px); }
 .checkout-dark .field { display:flex; gap:7px; margin:14px 0; color:rgba(247,238,224,.8); font-size:12px; }
-.checkout-dark input,.checkout-dark select { border:1px solid rgba(212,175,114,.35); color:var(--paper); background:rgba(255,255,255,.04); }
+.checkout-dark input,.checkout-dark select,.checkout-dark textarea { border:1px solid rgba(212,175,114,.35); color:var(--paper); background:rgba(255,255,255,.04); }
+.checkout-dark textarea { padding:12px; font:inherit; resize:vertical; }
 .checkout-dark select option { color:#160d0c; }
 .checkout-dark .summary { color:var(--paper); background:linear-gradient(145deg,rgba(65,29,25,.78),rgba(20,10,10,.9)); border:1px solid rgba(212,175,114,.25); }
 .checkout-dark .summary h2 { margin-top:0; font-size:37px; }
