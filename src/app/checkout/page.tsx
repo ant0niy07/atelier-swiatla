@@ -51,7 +51,7 @@ export default function Checkout() {
           <select name="shipping" onChange={(event) => { setDeliveryMethodId(event.target.value); setPaymentMethod(''); }} required value={deliveryMethodId}><option value="">Wybierz dostawę</option>{deliveryMethods.map((method) => <option key={method.id} value={method.id}>{method.label} — {formatPrice(method.rate_grosz)}</option>)}</select>
         </label>
         <label className="field">Metoda płatności
-          <select disabled={!selectedDelivery} name="payment" onChange={(event) => setPaymentMethod(event.target.value)} required value={paymentMethod}><option value="">Wybierz płatność</option>{selectedDelivery?.supports_blik_before_dispatch && <option value="blik_before_dispatch">BLIK przed wysyłką</option>}{selectedDelivery?.supports_cod && <option value="cod">Płatność za pobraniem</option>}</select>
+          <select disabled={!selectedDelivery} name="payment" onChange={(event) => setPaymentMethod(event.target.value)} required value={paymentMethod}><option value="">Wybierz płatność</option>{selectedDelivery?.supports_blik_before_dispatch && <option value="blik_before_dispatch">BLIK przed wysyłką</option>}{selectedDelivery?.supports_cod && <option value="cod">Płatność za pobraniem</option>}{selectedDelivery?.kind === 'local_warsaw' && <option value="pay_on_local_delivery">Płatność przy odbiorze</option>}</select>
         </label>
         <label className="field">Kod promocyjny<input name="promotion" placeholder="Opcjonalnie" type="text" /></label>
         <label className="field">Uwagi do zamówienia<textarea name="note" placeholder="Opcjonalnie" rows={3} /></label>
