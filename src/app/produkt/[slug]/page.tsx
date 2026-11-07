@@ -29,7 +29,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <h1 className="serif">{product.name}</h1>
           <p className="product-price">{formatPrice(product.price_grosz)}</p>
           <p className="product-description">{product.description}</p>
-          {staticProduct ? <AddToCart product={staticProduct} /> : <div className="notice"><strong>Produkt został opublikowany.</strong> Zakup zostanie udostępniony po skonfigurowaniu wariantów w katalogu.</div>}
+          <AddToCart product={{ id: product.id, sku: product.sku, name: product.name, price_grosz: product.price_grosz }} />
           <p className="image-disclaimer">Zdjęcia mają charakter poglądowy. Wygląd produktu może nieznacznie różnić się od przedstawionego na zdjęciu.</p>
           <div className="product-safety">
             <h2 className="serif">Bezpieczeństwo i pielęgnacja</h2>

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Menu, ShoppingBag, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { formatPrice, products, Product } from '@/data/products';
+import { formatPrice, Product } from '@/data/products';
 import { useCart } from '@/stores/cart-store';
 import { LanguageSwitch, useLocale } from '@/components/locale';
 
@@ -79,10 +79,8 @@ export function Header() {
 export function Cart() {
   const {locale}=useLocale();
   const { items, open, setOpen, change, remove } = useCart();
-  const lines = items
-    .map((item) => ({ item, product: products.find((product) => product.id === item.productId) }))
-    .filter((line): line is { item: typeof items[number]; product: Product } => Boolean(line.product));
-  const total = lines.reduce((sum, { item, product }) => sum + product.price * item.quantity, 0);
+  const lines = items;
+  const total = lines.reduce((sum, item) => sum + item.price_grosz * item.quantity, 0);
 
   if (!open) return null;
 
@@ -102,17 +100,17 @@ export function Cart() {
         ) : (
           <>
             <div className="drawer-lines">
-              {lines.map(({ item, product }) => (
-                <div className="drawer-item" key={`${product.id}-${item.variantId ?? 'standard'}`}>
+              {lines.map((item) => (
+                <div className="drawer-item" key={`${item.productId}-${item.variantId ?? 'standard'}`}>
                   <div>
-                    <strong>{product.name}</strong>
-                    <small>{formatPrice(product.price)}</small>
+                    <strong>{item.name}</strong>
+                    <small>{formatPrice(item.price_grosz)}</small>
                   </div>
                   <div className="quantity-controls">
-                    <button type="button" onClick={() => change(product.id, item.variantId, item.quantity - 1)} aria-label="Zmniejsz ilość">−</button>
+                    <button type="button" onClick={() => change(item.productId, item.variantId, item.quantity - 1)} aria-label="Zmniejsz ilość">−</button>
                     <span aria-label={`Ilość: ${item.quantity}`}>{item.quantity}</span>
-                    <button type="button" onClick={() => change(product.id, item.variantId, item.quantity + 1)} aria-label="Zwiększ ilość">+</button>
-                    <button className="remove-line" type="button" onClick={() => remove(product.id, item.variantId)}>{locale==='ru'?'Удалить':'Usuń'}</button>
+                    <button type="button" onClick={() => change(item.productId, item.variantId, item.quantity + 1)} aria-label="Zwiększ ilość">+</button>
+                    <button className="remove-line" type="button" onClick={() => remove(item.productId, item.variantId)}>{locale==='ru'?'Удалить':'Usuń'}</button>
                   </div>
                 </div>
               ))}

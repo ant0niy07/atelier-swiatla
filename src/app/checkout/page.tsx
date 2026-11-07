@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { formatPrice, products } from '@/data/products';
+import { formatPrice } from '@/data/products';
 import { useCart } from '@/stores/cart-store';
 
 const fields = [
@@ -16,8 +16,8 @@ export default function Checkout() {
   const [deliveryMethodId, setDeliveryMethodId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [status, setStatus] = useState('');
-  const lines = useMemo(() => items.map((item) => ({ item, product: products.find((product) => product.id === item.productId) })).filter((line): line is { item: typeof items[number]; product: typeof products[number] } => Boolean(line.product)), [items]);
-  const subtotal = lines.reduce((sum, line) => sum + line.item.quantity * line.product.price, 0);
+  const lines = useMemo(() => items, [items]);
+  const subtotal = lines.reduce((sum, line) => sum + line.quantity * line.price_grosz, 0);
 
   useEffect(() => { fetch('/api/checkout').then(async (response) => response.ok ? response.json() : Promise.reject()).then((data) => setDeliveryMethods(data.deliveryMethods ?? [])).catch(() => setStatus('Nie udało się pobrać dostępnych metod dostawy.')); }, []);
   const selectedDelivery = deliveryMethods.find((method) => method.id === deliveryMethodId);
@@ -30,7 +30,7 @@ export default function Checkout() {
     const response = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
       idempotencyKey: crypto.randomUUID(), deliveryMethodId, paymentMethod, promoCode: form.get('promotion') || undefined, note: form.get('note') || undefined,
       customer: { firstName: form.get('firstName'), lastName: form.get('lastName'), email: form.get('email'), phone: form.get('phone'), street: form.get('street'), postalCode: form.get('postalCode'), city: form.get('city') },
-      items: lines.map(({ item, product }) => ({ sku: product.sku, variantId: item.variantId, quantity: item.quantity })),
+      items: lines.map((item) => ({ sku: item.sku, variantId: item.variantId, quantity: item.quantity })),
     }) });
     const data = await response.json().catch(() => ({}));
     setStatus(response.ok ? `Zamówienie nr ${data.orderNumber} zostało przyjęte. Płatność oczekuje na weryfikację.` : data.error ?? 'Nie udało się utworzyć zamówienia.');
@@ -59,9 +59,8 @@ export default function Checkout() {
       </section>
       <aside className="summary">
         <h2 className="serif">Twój koszyk</h2>
-        {lines.length === 0 ? <p>Koszyk jest pusty.</p> : lines.map(({ item, product }) => {
-          const variant = product.variants?.find((entry) => entry.id === item.variantId);
-          return <p className="checkout-line" key={`${product.id}-${item.variantId ?? 'standard'}`}><span>{product.name} × {item.quantity}{variant && <small>{variant.name}</small>}</span><strong>{formatPrice(product.price * item.quantity)}</strong></p>;
+        {lines.length === 0 ? <p>Koszyk jest pusty.</p> : lines.map((item) => {
+          return <p className="checkout-line" key={`${item.productId}-${item.variantId ?? 'standard'}`}><span>{item.name} × {item.quantity}{item.variantName && <small>{item.variantName}</small>}</span><strong>{formatPrice(item.price_grosz * item.quantity)}</strong></p>;
         })}
         <p className="checkout-total"><span>Wartość produktów</span><strong>{formatPrice(subtotal)}</strong></p>
         <p className="checkout-total muted"><span>Dostawa</span><strong>Do potwierdzenia</strong></p>

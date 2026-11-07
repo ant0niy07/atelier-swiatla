@@ -33,14 +33,14 @@ function fallback(): CatalogProduct[] {
 
 export async function getPublishedCatalog(): Promise<CatalogProduct[]> {
   const supabase = client();
-  if (!supabase) return fallback();
+  if (!supabase) return process.env.NODE_ENV === 'production' ? [] : fallback();
 
   const { data, error } = await supabase
     .from('products')
     .select('id,slug,sku,name,description,price_grosz,categories(id,name,slug),product_images(storage_path,position)')
     .eq('status', 'published')
     .order('name');
-  if (error || !data) return fallback();
+  if (error || !data) return process.env.NODE_ENV === 'production' ? [] : fallback();
 
   return data.map((product) => {
     const images = [...(product.product_images ?? [])].sort((a, b) => a.position - b.position);
