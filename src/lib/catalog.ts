@@ -18,6 +18,22 @@ type CatalogQueryProduct = Omit<CatalogProduct, 'category' | 'image_url'> & {
   product_images: Array<{ storage_path: string; position: number }> | null;
 };
 
+const localImagesBySku: Record<string, string> = {
+  'XMAS-TREE-001': '/cinematic/product-swieca-choinka-3d-main.png',
+  'XMAS-AMBER-180': '/cinematic/product-winter-amber-main.png',
+  'XMAS-MINI-120': '/cinematic/product-winter-mini-main.png',
+  'XMAS-GINGER-001': '/cinematic/product-piernikowy-ludzik-main.png',
+};
+
+export function localProductImage(sku: string) {
+  return localImagesBySku[sku] ?? null;
+}
+
+export function resolveCatalogImages(sku: string, name: string, storageUrls: string[]) {
+  const urls = storageUrls.length ? storageUrls : (localProductImage(sku) ? [localProductImage(sku)!] : []);
+  return urls.map((url) => ({ url, alt: `Wizualizacja poglądowa: ${name}` }));
+}
+
 export function mapCatalogCategory(value: CatalogQueryProduct['categories']): CatalogCategory | null {
   // PostgREST returns a single object for the products.category_id many-to-one
   // relation. Keeping the array case makes the mapper resilient to an explicit
@@ -57,13 +73,10 @@ export async function getPublishedCatalog(): Promise<CatalogProduct[]> {
 
   return (data as CatalogQueryProduct[]).map((product) => {
     const images = [...(product.product_images ?? [])].sort((a, b) => a.position - b.position);
-    const resolvedImages = images.map((image) => ({
-      url: supabase.storage.from('product-images').getPublicUrl(image.storage_path).data.publicUrl,
-      alt: `Wizualizacja poglądowa: ${product.name}`,
-    }));
-    const image_url = resolvedImages[0]?.url
-      ? supabase.storage.from('product-images').getPublicUrl(images[0].storage_path).data.publicUrl
-      : null;
+    const resolvedImages = resolveCatalogImages(product.sku, product.name, images.map((image) =>
+      supabase.storage.from('product-images').getPublicUrl(image.storage_path).data.publicUrl,
+    ));
+    const image_url = resolvedImages[0]?.url ?? null;
     return {
       id: product.id,
       slug: product.slug,
