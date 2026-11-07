@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { CatalogCategory, CatalogProduct } from '@/lib/catalog';
 import { useLocale } from '@/components/locale';
 import { t } from '@/lib/i18n';
+import { localizedProduct } from '@/lib/i18n';
 
 function price(value: number) {
   return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value / 100);
@@ -33,18 +34,18 @@ export function CatalogBrowser({ products, categories, initialCategorySlug }: { 
       </div>
       <div className="products luxury-products">
         {visible.map((product) => (
-          <article className="card" key={product.id}>
-            <Link href={`/produkt/${product.slug}`} aria-label={`${text.discover}: ${product.name}`}>
-              <div className="product-art" role="img" aria-label={`Wizualizacja produktu ${product.name}`} style={product.image_url ? { backgroundImage: `url(${product.image_url})` } : undefined}>
+          <article className="card" key={product.id}>{(() => { const content = localizedProduct(locale, product); return <>
+            <Link href={`/produkt/${product.slug}`} aria-label={`${text.discover}: ${content.name}`}>
+              <div className="product-art" role="img" aria-label={`Wizualizacja produktu ${content.name}`} style={product.image_url ? { backgroundImage: `url(${product.image_url})` } : undefined}>
                 {!product.image_url && <span>Zdjęcie w przygotowaniu</span>}
               </div>
             </Link>
-            <span className="tag">{product.category?.name ?? 'Kolekcja'}</span>
-            <h3>{product.name}</h3>
-            <p className="card-description">{product.description}</p>
+            <span className="tag">{content.category}</span>
+            <h3>{content.name}</h3>
+            <p className="card-description">{content.description}</p>
             <div className="meta">{price(product.price_grosz)}</div>
             <Link className="btn ghost" href={`/produkt/${product.slug}`}>{text.discover}</Link>
-          </article>
+          </>})()}</article>
         ))}
       </div>
       {!visible.length && category !== 'all' && <section className="catalog-empty"><h2>{text.emptyTitle}</h2><p>{text.emptyBody}</p><button className="btn ghost" onClick={() => selectCategory('all')} type="button">{text.otherCandles}</button></section>}

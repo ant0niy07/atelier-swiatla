@@ -12,3 +12,15 @@ export const copy = {
 } as const;
 
 export function t(locale: Locale) { return copy[locale]; }
+
+const productRu: Record<string, { name: string; description: string; category: string }> = {
+  'XMAS-TREE-001': { name: 'Декоративная свеча «Ёлка 3D»', description: 'Небольшая форма и большая праздничная атмосфера. Декоративная свеча в форме ёлки для особенных зимних мгновений.', category: 'Формовые свечи' },
+  'XMAS-GINGER-001': { name: 'Пряничный человечек', description: 'Очаровательная праздничная деталь, вдохновлённая пряничным настроением и магией декабрьских вечеров.', category: 'Формовые свечи' },
+  'XMAS-AMBER-180': { name: 'Winter Amber', description: 'Тепло, заключённое в янтарное стекло. Небольшой ритуал для долгих зимних вечеров.', category: 'Свечи в стекле' },
+  'XMAS-MINI-120': { name: 'Winter Mini', description: 'Маленькая свеча — большое удовольствие. Идеальный подарок или особый зимний акцент в интерьере.', category: 'Свечи в стекле' },
+};
+
+export function localizedProduct(locale: Locale, product: { sku: string; name: string; description: string; category?: { name: string } | null }) {
+  const ru = productRu[product.sku];
+  return locale === 'ru' && ru ? { name: ru.name, description: ru.description, category: ru.category } : { name: product.name, description: product.description, category: product.category?.name ?? 'Kolekcja' };
+}

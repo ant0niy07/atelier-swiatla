@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { AddToCart } from '@/components/AddToCart';
 import { formatPrice, getProduct } from '@/data/products';
 import { getPublishedProduct } from '@/lib/catalog';
+import { LocalizedProductCopy } from '@/components/localized-product-copy';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,10 +24,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         </div>
         <section className="product-copy">
           <Link className="back-link" href="/sklep">← Wróć do kolekcji</Link>
-          <span className="tag">{product.category?.name ?? 'Kolekcja'}</span>
-          <h1 className="serif">{product.name}</h1>
+          <LocalizedProductCopy product={product} />
           <p className="product-price">{formatPrice(product.price_grosz)}</p>
-          <p className="product-description">{product.description}</p>
           <AddToCart product={{ id: product.id, sku: product.sku, name: product.name, price_grosz: product.price_grosz }} />
           <p className="image-disclaimer">Zdjęcia mają charakter poglądowy. Wygląd produktu może nieznacznie różnić się od przedstawionego na zdjęciu.</p>
           <div className="product-safety">
