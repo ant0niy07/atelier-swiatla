@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAdminService } from '@/lib/admin-auth';
+import { canTransitionFulfillment, type FulfillmentStatus } from '@/lib/order-workflow';
 
 const fulfillment = ['new', 'awaiting_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'] as const;
 const payment = ['awaiting_payment', 'cod_pending', 'paid', 'carrier_collected', 'settled', 'cancelled'] as const;
@@ -12,16 +13,6 @@ const schema = z.object({
   internal_note: z.string().trim().max(2000).optional(),
   is_test: z.boolean().optional(),
 });
-
-const nextFulfillment: Record<(typeof fulfillment)[number], readonly (typeof fulfillment)[number][]> = {
-  new: ['awaiting_payment', 'paid', 'processing', 'cancelled'],
-  awaiting_payment: ['paid', 'cancelled'],
-  paid: ['processing', 'cancelled'],
-  processing: ['shipped', 'cancelled'],
-  shipped: ['delivered'],
-  delivered: [],
-  cancelled: [],
-};
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   let db;
@@ -35,12 +26,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   const { data: current } = await db.from('orders').select('fulfillment_status,manual_payment_status').eq('id', id).maybeSingle();
   if (!current) return NextResponse.json({ error: 'Nie znaleziono zamówienia.' }, { status: 404 });
-  if (body.data.fulfillment_status && !nextFulfillment[current.fulfillment_status as keyof typeof nextFulfillment].includes(body.data.fulfillment_status)) {
+  if (body.data.fulfillment_status && body.data.fulfillment_status !== current.fulfillment_status && !canTransitionFulfillment(current.fulfillment_status as FulfillmentStatus, body.data.fulfillment_status)) {
     return NextResponse.json({ error: 'Niedozwolona zmiana etapu realizacji.' }, { status: 400 });
   }
 
   const { internal_note, is_test, ...changes } = body.data;
-  const update = is_test === undefined ? changes : { ...changes, is_test, hidden_at: is_test ? new Date().toISOString() : null, fulfillment_status: is_test ? 'cancelled' : changes.fulfillment_status };
+  // Classification is deliberately independent from fulfillment. A restored test
+  // order keeps its original status and payment/audit history rather than being
+  // silently left in the cancelled state.
+  const update = is_test === undefined ? changes : { ...changes, is_test, hidden_at: is_test ? new Date().toISOString() : null };
   const { error } = await db.from('orders').update(update).eq('id', id);
   if (error) return NextResponse.json({ error: 'Nie udało się zapisać zmian.' }, { status: 500 });
   if (body.data.fulfillment_status || internal_note || is_test !== undefined) {
