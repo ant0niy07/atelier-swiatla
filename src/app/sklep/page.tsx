@@ -1,10 +1,10 @@
 import { CatalogBrowser } from './catalog-browser';
-import { getPublishedCatalog } from '@/lib/catalog';
+import { getActiveCategories, getPublishedCatalog } from '@/lib/catalog';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ShopPage() {
-  const products = await getPublishedCatalog();
+export default async function ShopPage({ searchParams }: { searchParams: Promise<{ kategoria?: string }> }) {
+  const [products, categories, query] = await Promise.all([getPublishedCatalog(), getActiveCategories(), searchParams]);
 
   return (
     <section className="shop-dark">
@@ -14,9 +14,9 @@ export default async function ShopPage() {
           <span className="eyebrow">ATELIER ŚWIEC</span>
           <h1 className="serif">Kolekcja świąteczna</h1>
           <p>Świece tworzone z myślą o wyjątkowych chwilach.</p>
-          <small>Sprzedaż wkrótce.</small>
+          <small>Produkty wykonywane są z dbałością o każdy detal.</small>
         </header>
-        <CatalogBrowser products={products} />
+        <CatalogBrowser categories={categories} initialCategorySlug={query.kategoria} products={products} />
       </div>
     </section>
   );

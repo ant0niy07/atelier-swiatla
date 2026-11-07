@@ -11,6 +11,7 @@ export type CatalogProduct = {
   category: { id: string; name: string; slug: string } | null;
   image_url: string | null;
 };
+export type CatalogCategory = { id: string; name: string; slug: string };
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -58,6 +59,19 @@ export async function getPublishedCatalog(): Promise<CatalogProduct[]> {
       image_url,
     };
   });
+}
+
+export async function getActiveCategories(): Promise<CatalogCategory[]> {
+  const supabase = client();
+  if (!supabase) {
+    return process.env.NODE_ENV === 'production' ? [] : [
+      { id: 'decorative', slug: 'swiece-formowe', name: 'Świece formowe' },
+      { id: 'glass', slug: 'swiece-w-szkle', name: 'Świece w szkle' },
+      { id: 'gel', slug: 'swiece-zelowe', name: 'Świece żelowe' },
+    ];
+  }
+  const { data, error } = await supabase.from('categories').select('id,name,slug').eq('active', true).order('name');
+  return error || !data ? [] : data;
 }
 
 export async function getPublishedProduct(slug: string) {

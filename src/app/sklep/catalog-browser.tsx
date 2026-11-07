@@ -1,25 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
-import type { CatalogProduct } from '@/lib/catalog';
+import { useState } from 'react';
+import type { CatalogCategory, CatalogProduct } from '@/lib/catalog';
 
 function price(value: number) {
   return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value / 100);
 }
 
-export function CatalogBrowser({ products }: { products: CatalogProduct[] }) {
-  const [category, setCategory] = useState('all');
-  const categories = useMemo(() => Array.from(new Map(
-    products.filter((product) => product.category).map((product) => [product.category!.id, product.category!]),
-  ).values()), [products]);
-  const visible = products.filter((product) => category === 'all' || product.category?.id === category);
+export function CatalogBrowser({ products, categories, initialCategorySlug }: { products: CatalogProduct[]; categories: CatalogCategory[]; initialCategorySlug?: string }) {
+  const initial = categories.some((item) => item.slug === initialCategorySlug) ? initialCategorySlug! : 'all';
+  const [category, setCategory] = useState(initial);
+  const visible = products.filter((product) => category === 'all' || product.category?.slug === category);
 
   return (
     <>
       <div className="filters" aria-label="Filtruj kolekcję">
         <button aria-pressed={category === 'all'} className={category === 'all' ? 'filter selected' : 'filter'} onClick={() => setCategory('all')} type="button">Wszystkie</button>
-        {categories.map((item) => <button aria-pressed={category === item.id} className={category === item.id ? 'filter selected' : 'filter'} key={item.id} onClick={() => setCategory(item.id)} type="button">{item.name}</button>)}
+        {categories.map((item) => <button aria-pressed={category === item.slug} className={category === item.slug ? 'filter selected' : 'filter'} key={item.id} onClick={() => setCategory(item.slug)} type="button">{item.name}</button>)}
       </div>
       <div className="products luxury-products">
         {visible.map((product) => (
@@ -37,7 +35,7 @@ export function CatalogBrowser({ products }: { products: CatalogProduct[] }) {
           </article>
         ))}
       </div>
-      {!visible.length && <p className="catalog-empty">W tej kategorii nie ma jeszcze opublikowanych produktów.</p>}
+      {!visible.length && category !== 'all' && <section className="catalog-empty"><h2>Już wkrótce coś wyjątkowego!</h2><p>W tej kategorii nie ma jeszcze dostępnych produktów. Pracujemy nad nową kolekcją. Zajrzyj do nas ponownie!</p><button className="btn ghost" onClick={() => setCategory('all')} type="button">Zobacz pozostałe świece</button></section>}
     </>
   );
 }
