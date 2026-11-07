@@ -1,5 +1,6 @@
 import { requireAdmin } from '@/lib/admin-auth';
 import { ProductManager } from './product-manager';
+import { AdminBackLink } from '@/components/admin-back-link';
 
 export default async function Products() {
   const { client } = await requireAdmin();
@@ -10,7 +11,7 @@ export default async function Products() {
 
   return (
     <main className="wrap product-page-dark admin-products-page">
-      <span className="eyebrow">Asortyment</span>
+      <AdminBackLink /><span className="eyebrow">Asortyment</span>
       <h1 className="serif">Produkty</h1>
       <ProductManager products={products ?? []} categories={categories ?? []} />
     </main>
