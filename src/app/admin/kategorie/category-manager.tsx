@@ -3,8 +3,8 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-type Category = { id: string; name: string; slug: string; active: boolean };
-type Draft = Omit<Category, 'id'> & { id?: string };
+type Category = { id: string; name: string; slug: string; active: boolean; publishedCount: number };
+type Draft = Omit<Category, 'id' | 'publishedCount'> & { id?: string };
 const blank: Draft = { name: '', slug: '', active: true };
 
 function slugify(value: string) {
@@ -39,7 +39,7 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
       <div className="admin-products-toolbar"><button className="btn" onClick={() => { setNotice(''); setDraft({ ...blank }); }} type="button">Dodaj kategorię</button></div>
       <div className="admin-products-layout">
         <section className="admin-products-list">
-          {categories.map((category) => <button className={draft?.id === category.id ? 'admin-product-row active' : 'admin-product-row'} key={category.id} onClick={() => { setNotice(''); setDraft(category); }} type="button"><span><strong>{category.name}</strong><small>/{category.slug}</small></span><em>{category.active ? 'Aktywna' : 'Ukryta'}</em></button>)}
+          {categories.map((category) => <button className={draft?.id === category.id ? 'admin-product-row active' : 'admin-product-row'} key={category.id} onClick={() => { setNotice(''); const { publishedCount: _, ...editable } = category; setDraft(editable); }} type="button"><span><strong>{category.name}</strong><small>/{category.slug} · {category.publishedCount} opublikowanych</small></span><em>{category.active ? 'Aktywna' : 'Ukryta'}</em></button>)}
         </section>
         {draft && <form className="admin-product-form" onSubmit={submit}>
           <div className="admin-form-heading"><h2>{draft.id ? 'Edytuj kategorię' : 'Nowa kategoria'}</h2><button className="text-button" type="button" onClick={() => setDraft(null)}>Zamknij</button></div>
@@ -48,6 +48,7 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
             <label>Adres URL<input required pattern="[a-z0-9-]+" value={draft.slug} onChange={(event) => setDraft({ ...draft, slug: slugify(event.target.value) })} /></label>
           </div>
           <label className="admin-checkbox"><input checked={draft.active} onChange={(event) => setDraft({ ...draft, active: event.target.checked })} type="checkbox" /> Kategoria aktywna</label>
+          <p className="admin-help">Aktywna kategoria pojawia się od razu w kolekcji. Wyłączenie ukrywa ją na witrynie, ale nie usuwa produktów ani danych zamówień.</p>
           <div className="admin-form-actions"><button className="btn" disabled={saving} type="submit">{saving ? 'Zapisywanie…' : 'Zapisz kategorię'}</button>{notice && <p role="status">{notice}</p>}</div>
         </form>}
       </div>
