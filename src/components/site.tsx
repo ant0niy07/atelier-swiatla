@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { ShoppingBag, X } from 'lucide-react';
+import { Menu, ShoppingBag, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { formatPrice, products, Product } from '@/data/products';
 import { useCart } from '@/stores/cart-store';
 import { LanguageSwitch, useLocale } from '@/components/locale';
@@ -14,25 +15,63 @@ const artByTone: Record<Product['imageTone'], string> = {
 };
 
 export function Header() {
-  const {locale}=useLocale();
+  const { locale } = useLocale();
+  const [menuOpen, setMenuOpen] = useState(false);
   const count = useCart((state) => state.items.reduce((sum, item) => sum + item.quantity, 0));
   const setOpen = useCart((state) => state.setOpen);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [menuOpen]);
 
   return (
     <header className="site-header">
       <div className="wrap header-inner">
-        <Link className="brand" href="/" aria-label="ATELIER ŚWIEC — strona główna">
+        <Link className="brand" href="/" aria-label="ATELIER ŚWIEC — strona główna" onClick={() => setMenuOpen(false)}>
           ATELIER ŚWIEC
         </Link>
-        <nav aria-label="Główna nawigacja">
-          <Link href="/sklep">{locale==='ru'?'Коллекция':'Kolekcja'}</Link>
-          <Link href="/kontakt">{locale==='ru'?'Контакты':'Kontakt'}</Link>
+        <nav className="desktop-nav" aria-label={locale === 'ru' ? 'Основная навигация' : 'Główna nawigacja'}>
+          <Link href="/sklep">{locale === 'ru' ? 'Коллекция' : 'Kolekcja'}</Link>
+          <Link href="/kontakt">{locale === 'ru' ? 'Контакты' : 'Kontakt'}</Link>
         </nav>
-        <div className="header-actions"><LanguageSwitch /><button className="cart-btn" type="button" onClick={() => setOpen(true)} aria-label={locale==='ru'?'Открыть корзину':'Otwórz koszyk'}>
-          <ShoppingBag aria-hidden="true" size={19} />
-          {count > 0 && <span className="cart-count">{count}</span>}
-        </button></div>
+        <div className="header-actions">
+          <div className="desktop-language"><LanguageSwitch /></div>
+          <button className="cart-btn" type="button" onClick={() => { setMenuOpen(false); setOpen(true); }} aria-label={locale === 'ru' ? 'Открыть корзину' : 'Otwórz koszyk'}>
+            <ShoppingBag aria-hidden="true" size={19} />
+            {count > 0 && <span className="cart-count">{count}</span>}
+          </button>
+          <button
+            className="mobile-menu-trigger"
+            type="button"
+            aria-label={locale === 'ru' ? 'Открыть меню' : 'Otwórz menu'}
+            aria-expanded={menuOpen}
+            aria-controls="atelier-mobile-navigation"
+            onClick={() => setMenuOpen((current) => !current)}
+          >
+            <Menu aria-hidden="true" size={22} />
+          </button>
+        </div>
       </div>
+      {menuOpen && (
+        <>
+          <button className="mobile-menu-backdrop" type="button" onClick={() => setMenuOpen(false)} aria-label={locale === 'ru' ? 'Закрыть меню' : 'Zamknij menu'} />
+          <nav className="mobile-nav" id="atelier-mobile-navigation" aria-label={locale === 'ru' ? 'Мобильное меню' : 'Menu mobilne'}>
+            <div className="mobile-nav-top">
+              <span className="eyebrow">ATELIER ŚWIEC</span>
+              <button type="button" onClick={() => setMenuOpen(false)} aria-label={locale === 'ru' ? 'Закрыть меню' : 'Zamknij menu'}><X size={22} aria-hidden="true" /></button>
+            </div>
+            <Link href="/" onClick={() => setMenuOpen(false)}>{locale === 'ru' ? 'Главная' : 'Strona główna'}</Link>
+            <Link href="/sklep" onClick={() => setMenuOpen(false)}>{locale === 'ru' ? 'Коллекция' : 'Kolekcja'}</Link>
+            <Link href="/kontakt" onClick={() => setMenuOpen(false)}>{locale === 'ru' ? 'Контакты' : 'Kontakt'}</Link>
+            <div className="mobile-nav-language"><span className="eyebrow">{locale === 'ru' ? 'Язык' : 'Język'}</span><LanguageSwitch /></div>
+          </nav>
+        </>
+      )}
     </header>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import './luxury.css';
+import './mobile.css';
 import { Cart, Footer, Header } from '@/components/site';
 import { LocaleProvider } from '@/components/locale';
 
