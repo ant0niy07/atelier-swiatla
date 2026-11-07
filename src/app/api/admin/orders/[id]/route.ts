@@ -10,6 +10,7 @@ const schema = z.object({
   carrier_name: z.string().trim().max(120).nullable().optional(),
   tracking_number: z.string().trim().max(160).nullable().optional(),
   internal_note: z.string().trim().max(2000).optional(),
+  is_test: z.boolean().optional(),
 });
 
 const nextFulfillment: Record<(typeof fulfillment)[number], readonly (typeof fulfillment)[number][]> = {
@@ -32,20 +33,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const body = schema.safeParse(await request.json().catch(() => null));
   if (!body.success || !Object.keys(body.data).length) return NextResponse.json({ error: 'Nieprawidłowe dane.' }, { status: 400 });
   const { id } = await params;
-  const { data: current } = await db.from('orders').select('fulfillment_status').eq('id', id).maybeSingle();
+  const { data: current } = await db.from('orders').select('fulfillment_status,manual_payment_status').eq('id', id).maybeSingle();
   if (!current) return NextResponse.json({ error: 'Nie znaleziono zamówienia.' }, { status: 404 });
   if (body.data.fulfillment_status && !nextFulfillment[current.fulfillment_status as keyof typeof nextFulfillment].includes(body.data.fulfillment_status)) {
     return NextResponse.json({ error: 'Niedozwolona zmiana etapu realizacji.' }, { status: 400 });
   }
 
-  const { internal_note, ...changes } = body.data;
-  const { error } = await db.from('orders').update(changes).eq('id', id);
+  const { internal_note, is_test, ...changes } = body.data;
+  const update = is_test === undefined ? changes : { ...changes, is_test, hidden_at: is_test ? new Date().toISOString() : null, fulfillment_status: is_test ? 'cancelled' : changes.fulfillment_status };
+  const { error } = await db.from('orders').update(update).eq('id', id);
   if (error) return NextResponse.json({ error: 'Nie udało się zapisać zmian.' }, { status: 500 });
-  if (body.data.fulfillment_status || internal_note) {
+  if (body.data.fulfillment_status || internal_note || is_test !== undefined) {
     await db.from('order_status_history').insert({
       order_id: id,
       status: body.data.fulfillment_status ?? current.fulfillment_status,
-      note: internal_note ?? '',
+      note: internal_note ?? (is_test ? 'TEST_ORDER_HIDDEN' : is_test === false ? 'TEST_ORDER_RESTORED' : ''),
     });
   }
   return NextResponse.json({ ok: true });
