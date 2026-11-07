@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { CatalogCategory, CatalogProduct } from '@/lib/catalog';
 
 function price(value: number) {
@@ -9,15 +9,23 @@ function price(value: number) {
 }
 
 export function CatalogBrowser({ products, categories, initialCategorySlug }: { products: CatalogProduct[]; categories: CatalogCategory[]; initialCategorySlug?: string }) {
-  const initial = categories.some((item) => item.slug === initialCategorySlug) ? initialCategorySlug! : 'all';
-  const [category, setCategory] = useState(initial);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const requestedCategory = searchParams.get('kategoria') ?? initialCategorySlug;
+  const category = categories.some((item) => item.slug === requestedCategory) ? requestedCategory! : 'all';
   const visible = products.filter((product) => category === 'all' || product.category?.slug === category);
+  function selectCategory(slug: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (slug === 'all') params.delete('kategoria'); else params.set('kategoria', slug);
+    router.push(params.size ? `${pathname}?${params.toString()}` : pathname);
+  }
 
   return (
     <>
       <div className="filters" aria-label="Filtruj kolekcję">
-        <button aria-pressed={category === 'all'} className={category === 'all' ? 'filter selected' : 'filter'} onClick={() => setCategory('all')} type="button">Wszystkie</button>
-        {categories.map((item) => <button aria-pressed={category === item.slug} className={category === item.slug ? 'filter selected' : 'filter'} key={item.id} onClick={() => setCategory(item.slug)} type="button">{item.name}</button>)}
+        <button aria-pressed={category === 'all'} className={category === 'all' ? 'filter selected' : 'filter'} onClick={() => selectCategory('all')} type="button">Wszystkie</button>
+        {categories.map((item) => <button aria-pressed={category === item.slug} className={category === item.slug ? 'filter selected' : 'filter'} key={item.id} onClick={() => selectCategory(item.slug)} type="button">{item.name}</button>)}
       </div>
       <div className="products luxury-products">
         {visible.map((product) => (
@@ -35,7 +43,7 @@ export function CatalogBrowser({ products, categories, initialCategorySlug }: { 
           </article>
         ))}
       </div>
-      {!visible.length && category !== 'all' && <section className="catalog-empty"><h2>Już wkrótce coś wyjątkowego!</h2><p>W tej kategorii nie ma jeszcze dostępnych produktów. Pracujemy nad nową kolekcją. Zajrzyj do nas ponownie!</p><button className="btn ghost" onClick={() => setCategory('all')} type="button">Zobacz pozostałe świece</button></section>}
+      {!visible.length && category !== 'all' && <section className="catalog-empty"><h2>Ups! Na razie nic tu nie ma.</h2><p>Pracujemy nad nowymi produktami. Zajrzyj do nas ponownie!</p><button className="btn ghost" onClick={() => selectCategory('all')} type="button">Zobacz pozostałe świece</button></section>}
     </>
   );
 }

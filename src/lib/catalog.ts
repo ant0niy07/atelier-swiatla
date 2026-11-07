@@ -12,6 +12,17 @@ export type CatalogProduct = {
   image_url: string | null;
 };
 export type CatalogCategory = { id: string; name: string; slug: string };
+type CatalogQueryProduct = Omit<CatalogProduct, 'category' | 'image_url'> & {
+  categories: CatalogCategory | CatalogCategory[] | null;
+  product_images: Array<{ storage_path: string; position: number }> | null;
+};
+
+export function mapCatalogCategory(value: CatalogQueryProduct['categories']): CatalogCategory | null {
+  // PostgREST returns a single object for the products.category_id many-to-one
+  // relation. Keeping the array case makes the mapper resilient to an explicit
+  // relationship hint or a future schema change.
+  return Array.isArray(value) ? value[0] ?? null : value;
+}
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -43,7 +54,7 @@ export async function getPublishedCatalog(): Promise<CatalogProduct[]> {
     .order('name');
   if (error || !data) return process.env.NODE_ENV === 'production' ? [] : fallback();
 
-  return data.map((product) => {
+  return (data as CatalogQueryProduct[]).map((product) => {
     const images = [...(product.product_images ?? [])].sort((a, b) => a.position - b.position);
     const image_url = images[0]
       ? supabase.storage.from('product-images').getPublicUrl(images[0].storage_path).data.publicUrl
@@ -55,7 +66,7 @@ export async function getPublishedCatalog(): Promise<CatalogProduct[]> {
       name: product.name,
       description: product.description,
       price_grosz: product.price_grosz,
-      category: product.categories?.[0] ?? null,
+      category: mapCatalogCategory(product.categories),
       image_url,
     };
   });
