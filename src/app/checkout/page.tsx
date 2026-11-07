@@ -3,6 +3,8 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { formatPrice } from '@/data/products';
 import { useCart } from '@/stores/cart-store';
+import { useLocale } from '@/components/locale';
+import { t } from '@/lib/i18n';
 
 const fields = [
   ['firstName', 'Imię'], ['lastName', 'Nazwisko'], ['email', 'Adres e-mail'], ['phone', 'Numer telefonu'],
@@ -10,6 +12,8 @@ const fields = [
 ] as const;
 
 export default function Checkout() {
+  const { locale } = useLocale();
+  const text = t(locale);
   const items = useCart((state) => state.items);
   const clear = useCart((state) => state.clear);
   const [attempted, setAttempted] = useState(false);
@@ -57,30 +61,30 @@ export default function Checkout() {
   return (
     <form className="wrap checkout checkout-dark" onSubmit={submit}>
       <section>
-        <span className="eyebrow">Dane zamówienia</span>
-        <h1 className="serif">Podsumowanie</h1>
+        <span className="eyebrow">{text.customerData}</span>
+        <h1 className="serif">{text.checkoutTitle}</h1>
         {fields.map(([name, label]) => (
-          <label className="field" key={name}>{label}
+          <label className="field" key={name}>{text[name]}
             <input autoComplete={name === 'email' ? 'email' : undefined} name={name} required type={name === 'email' ? 'email' : name === 'phone' ? 'tel' : 'text'} />
           </label>
         ))}
-        <label className="field">Metoda dostawy
-          <select name="shipping" onChange={(event) => { setDeliveryMethodId(event.target.value); setPaymentMethod(''); }} required value={deliveryMethodId}><option value="">Wybierz dostawę</option>{deliveryMethods.map((method) => <option key={method.id} value={method.id}>{method.label} — {formatPrice(method.rate_grosz)}</option>)}</select>
+        <label className="field">{text.delivery}
+          <select name="shipping" onChange={(event) => { setDeliveryMethodId(event.target.value); setPaymentMethod(''); }} required value={deliveryMethodId}><option value="">{text.choose}</option>{deliveryMethods.map((method) => <option key={method.id} value={method.id}>{method.label} — {formatPrice(method.rate_grosz)}</option>)}</select>
         </label>
-        <label className="field">Metoda płatności
-          <select disabled={!selectedDelivery} name="payment" onChange={(event) => setPaymentMethod(event.target.value)} required value={paymentMethod}><option value="">Wybierz płatność</option>{selectedDelivery?.supports_blik_before_dispatch && <option value="blik_before_dispatch">BLIK przed wysyłką</option>}{selectedDelivery?.supports_cod && <option value="cod">Płatność za pobraniem</option>}{selectedDelivery?.kind === 'local_warsaw' && <option value="pay_on_local_delivery">Płatność przy odbiorze</option>}</select>
+        <label className="field">{text.payment}
+          <select disabled={!selectedDelivery} name="payment" onChange={(event) => setPaymentMethod(event.target.value)} required value={paymentMethod}><option value="">{text.choose}</option>{selectedDelivery?.supports_blik_before_dispatch && <option value="blik_before_dispatch">BLIK przed wysyłką</option>}{selectedDelivery?.supports_cod && <option value="cod">Płatność za pobraniem</option>}{selectedDelivery?.kind === 'local_warsaw' && <option value="pay_on_local_delivery">Płatność przy odbiorze</option>}</select>
         </label>
-        <label className="field">Kod promocyjny<input name="promotion" placeholder="Opcjonalnie" type="text" /></label>
-        <label className="field">Uwagi do zamówienia<textarea name="note" placeholder="Opcjonalnie" rows={3} /></label>
-        <button className="btn" disabled={submitting} type="submit">{submitting ? 'Tworzenie zamówienia…' : 'Przejdź do potwierdzenia'}</button>
+        <label className="field">{text.promo}<input name="promotion" placeholder="Opcjonalnie" type="text" /></label>
+        <label className="field">{text.notes}<textarea name="note" placeholder="Opcjonalnie" rows={3} /></label>
+        <button className="btn" disabled={submitting} type="submit">{submitting ? 'Tworzenie zamówienia…' : text.createOrder}</button>
         {(attempted || status) && <p className="checkout-status" role="status">{status}</p>}
       </section>
       <aside className="summary">
-        <h2 className="serif">Twój koszyk</h2>
+        <h2 className="serif">{text.cart}</h2>
         {lines.length === 0 ? <p>Koszyk jest pusty.</p> : lines.map((item) => {
           return <p className="checkout-line" key={`${item.productId}-${item.variantId ?? 'standard'}`}><span>{item.name} × {item.quantity}{item.variantName && <small>{item.variantName}</small>}</span><strong>{formatPrice(item.price_grosz * item.quantity)}</strong></p>;
         })}
-        <p className="checkout-total"><span>Wartość produktów</span><strong>{formatPrice(subtotal)}</strong></p>
+        <p className="checkout-total"><span>{text.productsValue}</span><strong>{formatPrice(subtotal)}</strong></p>
         <p className="checkout-total muted"><span>Dostawa</span><strong>Do potwierdzenia</strong></p>
       </aside>
     </form>

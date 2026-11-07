@@ -3,12 +3,16 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { CatalogCategory, CatalogProduct } from '@/lib/catalog';
+import { useLocale } from '@/components/locale';
+import { t } from '@/lib/i18n';
 
 function price(value: number) {
   return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value / 100);
 }
 
 export function CatalogBrowser({ products, categories, initialCategorySlug }: { products: CatalogProduct[]; categories: CatalogCategory[]; initialCategorySlug?: string }) {
+  const { locale } = useLocale();
+  const text = t(locale);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -24,13 +28,13 @@ export function CatalogBrowser({ products, categories, initialCategorySlug }: { 
   return (
     <>
       <div className="filters" aria-label="Filtruj kolekcję">
-        <button aria-pressed={category === 'all'} className={category === 'all' ? 'filter selected' : 'filter'} onClick={() => selectCategory('all')} type="button">Wszystkie</button>
+        <button aria-pressed={category === 'all'} className={category === 'all' ? 'filter selected' : 'filter'} onClick={() => selectCategory('all')} type="button">{text.all}</button>
         {categories.map((item) => <button aria-pressed={category === item.slug} className={category === item.slug ? 'filter selected' : 'filter'} key={item.id} onClick={() => selectCategory(item.slug)} type="button">{item.name}</button>)}
       </div>
       <div className="products luxury-products">
         {visible.map((product) => (
           <article className="card" key={product.id}>
-            <Link href={`/produkt/${product.slug}`} aria-label={`Poznaj produkt ${product.name}`}>
+            <Link href={`/produkt/${product.slug}`} aria-label={`${text.discover}: ${product.name}`}>
               <div className="product-art" role="img" aria-label={`Wizualizacja produktu ${product.name}`} style={product.image_url ? { backgroundImage: `url(${product.image_url})` } : undefined}>
                 {!product.image_url && <span>Zdjęcie w przygotowaniu</span>}
               </div>
@@ -39,11 +43,11 @@ export function CatalogBrowser({ products, categories, initialCategorySlug }: { 
             <h3>{product.name}</h3>
             <p className="card-description">{product.description}</p>
             <div className="meta">{price(product.price_grosz)}</div>
-            <Link className="btn ghost" href={`/produkt/${product.slug}`}>Poznaj produkt</Link>
+            <Link className="btn ghost" href={`/produkt/${product.slug}`}>{text.discover}</Link>
           </article>
         ))}
       </div>
-      {!visible.length && category !== 'all' && <section className="catalog-empty"><h2>Ups! Na razie nic tu nie ma.</h2><p>Pracujemy nad nowymi produktami. Zajrzyj do nas ponownie!</p><button className="btn ghost" onClick={() => selectCategory('all')} type="button">Zobacz pozostałe świece</button></section>}
+      {!visible.length && category !== 'all' && <section className="catalog-empty"><h2>{text.emptyTitle}</h2><p>{text.emptyBody}</p><button className="btn ghost" onClick={() => selectCategory('all')} type="button">{text.otherCandles}</button></section>}
     </>
   );
 }
