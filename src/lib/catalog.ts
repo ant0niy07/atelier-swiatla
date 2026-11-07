@@ -10,6 +10,7 @@ export type CatalogProduct = {
   price_grosz: number;
   category: { id: string; name: string; slug: string } | null;
   image_url: string | null;
+  images: Array<{ url: string; alt: string }>;
 };
 export type CatalogCategory = { id: string; name: string; slug: string };
 type CatalogQueryProduct = Omit<CatalogProduct, 'category' | 'image_url'> & {
@@ -39,7 +40,7 @@ function fallback(): CatalogProduct[] {
     description: product.description,
     price_grosz: product.price,
     category: { id: product.family, slug: product.family, name: product.family === 'glass' ? 'Świece w szkle' : product.family === 'soy' ? 'Świece sojowe' : 'Świece dekoracyjne' },
-    image_url: `/cinematic/product-${product.imageTone}.png`,
+    image_url: `/cinematic/product-${product.imageTone}.png`, images: [{ url: `/cinematic/product-${product.imageTone}.png`, alt: `Wizualizacja poglądowa: ${product.name}` }],
   }));
 }
 
@@ -56,7 +57,11 @@ export async function getPublishedCatalog(): Promise<CatalogProduct[]> {
 
   return (data as CatalogQueryProduct[]).map((product) => {
     const images = [...(product.product_images ?? [])].sort((a, b) => a.position - b.position);
-    const image_url = images[0]
+    const resolvedImages = images.map((image) => ({
+      url: supabase.storage.from('product-images').getPublicUrl(image.storage_path).data.publicUrl,
+      alt: `Wizualizacja poglądowa: ${product.name}`,
+    }));
+    const image_url = resolvedImages[0]?.url
       ? supabase.storage.from('product-images').getPublicUrl(images[0].storage_path).data.publicUrl
       : null;
     return {
@@ -68,6 +73,7 @@ export async function getPublishedCatalog(): Promise<CatalogProduct[]> {
       price_grosz: product.price_grosz,
       category: mapCatalogCategory(product.categories),
       image_url,
+      images: resolvedImages,
     };
   });
 }

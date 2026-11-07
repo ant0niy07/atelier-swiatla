@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AddToCart } from '@/components/AddToCart';
-import { ProductArt } from '@/components/site';
 import { formatPrice, getProduct } from '@/data/products';
 import { getPublishedProduct } from '@/lib/catalog';
 
@@ -17,11 +16,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     <article className="product-page-dark">
       <div className="wrap product-page">
         <div className="gallery">
-          {staticProduct ? <ProductArt large product={staticProduct} /> : (
-            <div className="product-art product-art-large" role="img" aria-label={`Wizualizacja produktu ${product.name}`} style={product.image_url ? { backgroundImage: `url(${product.image_url})` } : undefined}>
-              {!product.image_url && <span>Zdjęcie w przygotowaniu</span>}
-            </div>
-          )}
+          <div className="product-art product-art-large" role="img" aria-label={`Wizualizacja produktu ${product.name}`} style={product.image_url ? { backgroundImage: `url(${product.image_url})` } : undefined}>
+            {!product.image_url && <span>Zdjęcie w przygotowaniu</span>}
+          </div>
+          {product.images.length > 1 && <div className="product-gallery-thumbnails">{product.images.slice(1).map((image) => <a href={image.url} key={image.url} aria-label={image.alt} target="_blank" rel="noreferrer" style={{ backgroundImage: `url(${image.url})` }} />)}</div>}
         </div>
         <section className="product-copy">
           <Link className="back-link" href="/sklep">← Wróć do kolekcji</Link>
