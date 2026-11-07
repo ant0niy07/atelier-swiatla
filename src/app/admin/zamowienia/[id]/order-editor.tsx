@@ -14,12 +14,15 @@ export function OrderEditor({ order }: { order: any }) {
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const test = form.get('is_test') === 'on';
+    if (test && !order.is_test && !window.confirm(order.manual_payment_status === 'paid' ? 'To opłacone zamówienie. Oznaczenie jako test nie zmieni płatności. Kontynuować?' : 'Zamówienie zniknie z aktywnej listy i statystyk. Kontynuować?')) return;
     setSaving(true);
-    const response = await fetch(`/api/admin/orders/${order.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fulfillment_status: form.get('fulfillment_status'), manual_payment_status: form.get('manual_payment_status'), carrier_name: form.get('carrier_name') || null, tracking_number: form.get('tracking_number') || null, internal_note: form.get('internal_note') || undefined }) });
+    const response = await fetch(`/api/admin/orders/${order.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fulfillment_status: form.get('fulfillment_status'), manual_payment_status: form.get('manual_payment_status'), carrier_name: form.get('carrier_name') || null, tracking_number: form.get('tracking_number') || null, internal_note: form.get('internal_note') || undefined, is_test: test }) });
     const data = await response.json().catch(() => ({}));
     setSaving(false);
     setMessage(response.ok ? 'Zmiany zapisane.' : data.error ?? 'Nie udało się zapisać zmian.');
-    if (response.ok) router.refresh();
+    if (response.ok && test) router.replace('/admin/zamowienia');
+    else if (response.ok) router.refresh();
   }
   return <div className="admin-order-grid">
     <section className="admin-order-card"><h2>Klient i dostawa</h2><p><strong>{order.customers?.first_name} {order.customers?.last_name}</strong><br />{order.email}<br />{order.customers?.phone ?? address.phone}</p><p>{address.street}<br />{address.postalCode} {address.city}</p><p><strong>{order.shipping_method}</strong><br />{order.payment_method}</p>{order.customer_note && <p>Uwagi klienta: {order.customer_note}</p>}</section>
