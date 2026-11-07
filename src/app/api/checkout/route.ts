@@ -50,9 +50,8 @@ export async function POST(request: Request) {
   const { error: itemsError } = await db.from('order_items').insert(lines.map(({ item, product }) => ({ order_id: order.id, product_id: product.id, sku: product.sku, product_name: item.variantId ? `${product.name} — ${item.variantId}` : product.name, unit_price_grosz: product.price_grosz, quantity: item.quantity, line_total_grosz: product.price_grosz * item.quantity })));
   if (itemsError) { await db.from('orders').delete().eq('id', order.id); return NextResponse.json({ error: 'Nie udało się zapisać pozycji zamówienia.' }, { status: 500 }); }
   await db.from('checkout_idempotency').update({ order_id: order.id }).eq('idempotency_key', body.idempotencyKey);
-  // Notification failure never alters a confirmed order and retries cannot emit
-  // another one because only the initial idempotency-key path reaches here.
-  await notifyTelegramOrder({ orderNumber: order.order_number, totalGrosz: subtotal + delivery.rate_grosz, email: body.customer.email });
+  const { data: notificationOrder } = await db.from('orders').select('order_number,total_grosz,customer_note,order_items(product_name,quantity)').eq('id', order.id).single();
+  if (notificationOrder) await notifyTelegramOrder(notificationOrder);
   return NextResponse.json({ orderId: order.id, orderNumber: order.order_number, paymentStatus });
 }
 
