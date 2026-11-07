@@ -11,11 +11,14 @@ const fields = [
 
 export default function Checkout() {
   const items = useCart((state) => state.items);
+  const clear = useCart((state) => state.clear);
   const [attempted, setAttempted] = useState(false);
   const [deliveryMethods, setDeliveryMethods] = useState<Array<{id:string;label:string;kind:string;rate_grosz:number;supports_blik_before_dispatch:boolean;supports_cod:boolean}>>([]);
   const [deliveryMethodId, setDeliveryMethodId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [status, setStatus] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
   const lines = useMemo(() => items, [items]);
   const subtotal = lines.reduce((sum, line) => sum + line.quantity * line.price_grosz, 0);
 
@@ -26,14 +29,29 @@ export default function Checkout() {
     setAttempted(true);
     const form = new FormData(event.currentTarget);
     if (!selectedDelivery || !paymentMethod || lines.length === 0) { setStatus('Wybierz dostawę i płatność oraz sprawdź koszyk.'); return; }
+    const key = idempotencyKey ?? crypto.randomUUID();
+    if (!idempotencyKey) setIdempotencyKey(key);
+    setSubmitting(true);
     setStatus('Tworzenie zamówienia…');
-    const response = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-      idempotencyKey: crypto.randomUUID(), deliveryMethodId, paymentMethod, promoCode: form.get('promotion') || undefined, note: form.get('note') || undefined,
-      customer: { firstName: form.get('firstName'), lastName: form.get('lastName'), email: form.get('email'), phone: form.get('phone'), street: form.get('street'), postalCode: form.get('postalCode'), city: form.get('city') },
-      items: lines.map((item) => ({ sku: item.sku, variantId: item.variantId, quantity: item.quantity })),
-    }) });
-    const data = await response.json().catch(() => ({}));
-    setStatus(response.ok ? `Zamówienie nr ${data.orderNumber} zostało przyjęte. Płatność oczekuje na weryfikację.` : data.error ?? 'Nie udało się utworzyć zamówienia.');
+    try {
+      const response = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+        idempotencyKey: key, deliveryMethodId, paymentMethod, promoCode: form.get('promotion') || undefined, note: form.get('note') || undefined,
+        customer: { firstName: form.get('firstName'), lastName: form.get('lastName'), email: form.get('email'), phone: form.get('phone'), street: form.get('street'), postalCode: form.get('postalCode'), city: form.get('city') },
+        items: lines.map((item) => ({ sku: item.sku, variantId: item.variantId, quantity: item.quantity })),
+      }) });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.orderNumber) {
+        clear();
+        setIdempotencyKey(null);
+        setStatus(`Zamówienie nr ${data.orderNumber} zostało przyjęte. Płatność oczekuje na weryfikację.`);
+      } else {
+        setStatus(data.error ?? 'Nie udało się utworzyć zamówienia. Spróbuj ponownie.');
+      }
+    } catch {
+      setStatus('Nie udało się połączyć z serwerem. Możesz bezpiecznie spróbować ponownie.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -54,7 +72,7 @@ export default function Checkout() {
         </label>
         <label className="field">Kod promocyjny<input name="promotion" placeholder="Opcjonalnie" type="text" /></label>
         <label className="field">Uwagi do zamówienia<textarea name="note" placeholder="Opcjonalnie" rows={3} /></label>
-        <button className="btn" type="submit">Przejdź do potwierdzenia</button>
+        <button className="btn" disabled={submitting} type="submit">{submitting ? 'Tworzenie zamówienia…' : 'Przejdź do potwierdzenia'}</button>
         {(attempted || status) && <p className="checkout-status" role="status">{status}</p>}
       </section>
       <aside className="summary">
