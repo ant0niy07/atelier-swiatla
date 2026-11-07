@@ -1,2 +1,13 @@
-import { notFound } from 'next/navigation'; import { requireAdmin } from '@/lib/admin-auth';
-export default async function Order({params}:{params:Promise<{id:string}>}){const {client}=await requireAdmin();const {id}=await params;const {data:o}=await client.from('orders').select('*,order_items(*)').eq('id',id).maybeSingle();if(!o)notFound();return <main className="wrap product-page-dark"><span className="eyebrow">Zamówienie #{o.order_number}</span><h1 className="serif">Szczegóły zamówienia</h1><p>{o.email}</p><p>{o.shipping_method} · {o.payment_method}</p><p>Produkcja: {o.fulfillment_status}</p><p>Płatność: {o.manual_payment_status}</p>{o.order_items.map((i:{id:string;product_name:string;quantity:number})=><p key={i.id}>{i.product_name} × {i.quantity}</p>)}</main>}
+import { notFound } from 'next/navigation';
+import { requireAdmin } from '@/lib/admin-auth';
+import { OrderEditor } from './order-editor';
+
+export default async function Order({ params }: { params: Promise<{ id: string }> }) {
+  const { client } = await requireAdmin();
+  const { id } = await params;
+  const { data: order } = await client.from('orders')
+    .select('*,order_items(*),customers(first_name,last_name,phone),order_status_history(status,note,created_at)')
+    .eq('id', id).maybeSingle();
+  if (!order) notFound();
+  return <main className="wrap product-page-dark admin-order-page"><span className="eyebrow">Zamówienie #{order.order_number}</span><h1 className="serif">Szczegóły zamówienia</h1><OrderEditor order={order} /></main>;
+}
