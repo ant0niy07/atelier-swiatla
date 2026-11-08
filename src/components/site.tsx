@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { formatPrice, Product } from '@/data/products';
 import { useCart } from '@/stores/cart-store';
 import { LanguageSwitch, useLocale } from '@/components/locale';
+import { localizedProduct, t } from '@/lib/i18n';
 
 const artByTone: Record<Product['imageTone'], string> = {
   tree: '/cinematic/product-tree.png',
@@ -78,6 +79,7 @@ export function Header() {
 
 export function Cart() {
   const {locale}=useLocale();
+  const text=t(locale);
   const { items, open, setOpen, change, remove } = useCart();
   const lines = items;
   const total = lines.reduce((sum, item) => sum + item.price_grosz * item.quantity, 0);
@@ -87,10 +89,10 @@ export function Cart() {
   return (
     <>
       <button className="overlay" type="button" onClick={() => setOpen(false)} aria-label={locale==='ru'?'Закрыть корзину':'Zamknij koszyk'} />
-      <aside className="drawer" aria-label="Twój koszyk" aria-modal="true" role="dialog">
+      <aside className="drawer" aria-label={text.cart} aria-modal="true" role="dialog">
         <div className="drawer-top">
           <p className="eyebrow">ATELIER ŚWIEC</p>
-          <button className="drawer-close" type="button" onClick={() => setOpen(false)} aria-label="Zamknij koszyk">
+          <button className="drawer-close" type="button" onClick={() => setOpen(false)} aria-label={text.closeCart}>
             <X size={20} />
           </button>
         </div>
@@ -103,20 +105,20 @@ export function Cart() {
               {lines.map((item) => (
                 <div className="drawer-item" key={`${item.productId}-${item.variantId ?? 'standard'}`}>
                   <div>
-                    <strong>{item.name}</strong>
+                    <strong>{localizedProduct(locale,{sku:item.sku,name:item.name,description:''}).name}</strong>
                     <small>{formatPrice(item.price_grosz)}</small>
                   </div>
                   <div className="quantity-controls">
-                    <button type="button" onClick={() => change(item.productId, item.variantId, item.quantity - 1)} aria-label="Zmniejsz ilość">−</button>
-                    <span aria-label={`Ilość: ${item.quantity}`}>{item.quantity}</span>
-                    <button type="button" onClick={() => change(item.productId, item.variantId, item.quantity + 1)} aria-label="Zwiększ ilość">+</button>
-                    <button className="remove-line" type="button" onClick={() => remove(item.productId, item.variantId)}>{locale==='ru'?'Удалить':'Usuń'}</button>
+                    <button type="button" onClick={() => change(item.productId, item.variantId, item.quantity - 1)} aria-label={text.decrease}>−</button>
+                    <span aria-label={`${text.quantity}: ${item.quantity}`}>{item.quantity}</span>
+                    <button type="button" onClick={() => change(item.productId, item.variantId, item.quantity + 1)} aria-label={text.increase}>+</button>
+                    <button className="remove-line" type="button" onClick={() => remove(item.productId, item.variantId)}>{text.remove}</button>
                   </div>
                 </div>
               ))}
             </div>
             <p className="drawer-total"><span>{locale==='ru'?'Сумма товаров':'Suma częściowa'}</span><strong>{formatPrice(total)}</strong></p>
-            <Link className="btn drawer-checkout" href="/checkout" onClick={() => setOpen(false)}>{locale==='ru'?'Перейти к оформлению':'Przejdź do podsumowania'}</Link>
+            <Link className="btn drawer-checkout" href="/checkout" onClick={() => setOpen(false)}>{text.checkout}</Link>
           </>
         )}
       </aside>

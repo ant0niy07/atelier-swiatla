@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { formatPrice } from '@/data/products';
 import { useCart } from '@/stores/cart-store';
 import { useLocale } from '@/components/locale';
-import { t } from '@/lib/i18n';
+import { localizedProduct, t } from '@/lib/i18n';
 
 const fields = [
   ['firstName', 'Imię'], ['lastName', 'Nazwisko'], ['email', 'Adres e-mail'], ['phone', 'Numer telefonu'],
@@ -26,17 +26,17 @@ export default function Checkout() {
   const lines = useMemo(() => items, [items]);
   const subtotal = lines.reduce((sum, line) => sum + line.quantity * line.price_grosz, 0);
 
-  useEffect(() => { fetch('/api/checkout').then(async (response) => response.ok ? response.json() : Promise.reject()).then((data) => setDeliveryMethods(data.deliveryMethods ?? [])).catch(() => setStatus('Nie udało się pobrać dostępnych metod dostawy.')); }, []);
+  useEffect(() => { fetch('/api/checkout').then(async (response) => response.ok ? response.json() : Promise.reject()).then((data) => setDeliveryMethods(data.deliveryMethods ?? [])).catch(() => setStatus(t(locale).deliveryError)); }, [locale]);
   const selectedDelivery = deliveryMethods.find((method) => method.id === deliveryMethodId);
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAttempted(true);
     const form = new FormData(event.currentTarget);
-    if (!selectedDelivery || !paymentMethod || lines.length === 0) { setStatus('Wybierz dostawę i płatność oraz sprawdź koszyk.'); return; }
+    if (!selectedDelivery || !paymentMethod || lines.length === 0) { setStatus(text.selectDelivery); return; }
     const key = idempotencyKey ?? crypto.randomUUID();
     if (!idempotencyKey) setIdempotencyKey(key);
     setSubmitting(true);
-    setStatus('Tworzenie zamówienia…');
+    setStatus(text.creating);
     try {
       const response = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
         idempotencyKey: key, deliveryMethodId, paymentMethod, promoCode: form.get('promotion') || undefined, note: form.get('note') || undefined,
@@ -47,12 +47,12 @@ export default function Checkout() {
       if (response.ok && data.orderNumber) {
         clear();
         setIdempotencyKey(null);
-        setStatus(`Zamówienie nr ${data.orderNumber} zostało przyjęte. Płatność oczekuje na weryfikację.`);
+        setStatus(text.orderSuccess.replace('{number}', String(data.orderNumber)));
       } else {
-        setStatus(data.error ?? 'Nie udało się utworzyć zamówienia. Spróbuj ponownie.');
+        setStatus(data.error ?? text.orderError);
       }
     } catch {
-      setStatus('Nie udało się połączyć z serwerem. Możesz bezpiecznie spróbować ponownie.');
+      setStatus(text.networkError);
     } finally {
       setSubmitting(false);
     }
@@ -72,20 +72,20 @@ export default function Checkout() {
           <select name="shipping" onChange={(event) => { setDeliveryMethodId(event.target.value); setPaymentMethod(''); }} required value={deliveryMethodId}><option value="">{text.choose}</option>{deliveryMethods.map((method) => <option key={method.id} value={method.id}>{method.label} — {formatPrice(method.rate_grosz)}</option>)}</select>
         </label>
         <label className="field">{text.payment}
-          <select disabled={!selectedDelivery} name="payment" onChange={(event) => setPaymentMethod(event.target.value)} required value={paymentMethod}><option value="">{text.choose}</option>{selectedDelivery?.supports_blik_before_dispatch && <option value="blik_before_dispatch">BLIK przed wysyłką</option>}{selectedDelivery?.supports_cod && <option value="cod">Płatność za pobraniem</option>}{selectedDelivery?.kind === 'local_warsaw' && <option value="pay_on_local_delivery">Płatność przy odbiorze</option>}</select>
+          <select disabled={!selectedDelivery} name="payment" onChange={(event) => setPaymentMethod(event.target.value)} required value={paymentMethod}><option value="">{text.choose}</option>{selectedDelivery?.supports_blik_before_dispatch && <option value="blik_before_dispatch">{text.blik}</option>}{selectedDelivery?.supports_cod && <option value="cod">{text.cod}</option>}{selectedDelivery?.kind === 'local_warsaw' && <option value="pay_on_local_delivery">{text.localPayment}</option>}</select>
         </label>
-        <label className="field">{text.promo}<input name="promotion" placeholder="Opcjonalnie" type="text" /></label>
-        <label className="field">{text.notes}<textarea name="note" placeholder="Opcjonalnie" rows={3} /></label>
-        <button className="btn" disabled={submitting} type="submit">{submitting ? 'Tworzenie zamówienia…' : text.createOrder}</button>
+        <label className="field">{text.promo}<input name="promotion" placeholder={text.optional} type="text" /></label>
+        <label className="field">{text.notes}<textarea name="note" placeholder={text.optional} rows={3} /></label>
+        <button className="btn" disabled={submitting} type="submit">{submitting ? text.creating : text.createOrder}</button>
         {(attempted || status) && <p className="checkout-status" role="status">{status}</p>}
       </section>
       <aside className="summary">
         <h2 className="serif">{text.cart}</h2>
-        {lines.length === 0 ? <p>Koszyk jest pusty.</p> : lines.map((item) => {
-          return <p className="checkout-line" key={`${item.productId}-${item.variantId ?? 'standard'}`}><span>{item.name} × {item.quantity}{item.variantName && <small>{item.variantName}</small>}</span><strong>{formatPrice(item.price_grosz * item.quantity)}</strong></p>;
+        {lines.length === 0 ? <p>{text.emptyCart}</p> : lines.map((item) => {
+          return <p className="checkout-line" key={`${item.productId}-${item.variantId ?? 'standard'}`}><span>{localizedProduct(locale,{sku:item.sku,name:item.name,description:''}).name} × {item.quantity}{item.variantName && <small>{item.variantName}</small>}</span><strong>{formatPrice(item.price_grosz * item.quantity)}</strong></p>;
         })}
         <p className="checkout-total"><span>{text.productsValue}</span><strong>{formatPrice(subtotal)}</strong></p>
-        <p className="checkout-total muted"><span>Dostawa</span><strong>Do potwierdzenia</strong></p>
+        <p className="checkout-total muted"><span>{text.delivery}</span><strong>{text.deliveryPending}</strong></p>
       </aside>
     </form>
   );
