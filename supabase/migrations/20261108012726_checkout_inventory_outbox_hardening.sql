@@ -71,8 +71,9 @@ declare
   v_item jsonb;
   v_qty integer;
   v_skus text[];
+  v_has_base_product boolean := false;
+  v_has_personalization_addon boolean := false;
   v_subtotal bigint := 0;
-  v_eligible bigint := 0;
   v_discount bigint := 0;
   v_shipping bigint := 0;
   v_total bigint := 0;
@@ -166,12 +167,23 @@ begin
     v_qty := (v_item->>'quantity')::integer;
     select * into v_product from public.products
     where sku = v_item->>'sku' and status = 'published' for update;
-    if not found or coalesce(v_product.is_personalization_addon, false) then raise exception 'PRODUCT_INVALID'; end if;
+    if not found then raise exception 'PRODUCT_INVALID'; end if;
+    if coalesce(v_product.is_personalization_addon, false) then
+      v_has_personalization_addon := true;
+    else
+      v_has_base_product := true;
+    end if;
     if not v_product.made_to_order and v_product.stock_on_hand - v_product.stock_reserved < v_qty then
       raise exception 'STOCK_INVALID';
     end if;
     v_subtotal := v_subtotal + v_product.price_grosz::bigint * v_qty;
   end loop;
+  -- A custom-fragrance fee is an add-on, never a standalone cart product.
+  -- It is intentionally included in v_subtotal so global promotions discount
+  -- it together with every other accepted order line.
+  if v_has_personalization_addon and not v_has_base_product then
+    raise exception 'PERSONALIZATION_INVALID';
+  end if;
   if v_subtotal <= 0 or v_subtotal > 100000000 then raise exception 'TOTAL_INVALID'; end if;
   if v_delivery.minimum_order_grosz is not null and v_subtotal < v_delivery.minimum_order_grosz then
     raise exception 'DELIVERY_MINIMUM_NOT_MET';
@@ -187,24 +199,17 @@ begin
     if not found then raise exception 'PROMOTION_INVALID'; end if;
     if (v_promo.usage_limit is not null and v_promo.used_count >= v_promo.usage_limit)
        or v_subtotal < v_promo.min_order_grosz then raise exception 'PROMOTION_INVALID'; end if;
-    select coalesce(sum(p.price_grosz::bigint * (item.value->>'quantity')::integer), 0) into v_eligible
-    from jsonb_array_elements(p_request->'items') item
-    join public.products p on p.sku = item.value->>'sku'
-    where (not exists(select 1 from public.promotion_product_rules r where r.promotion_id = v_promo.id and r.excluded = false)
-           or exists(select 1 from public.promotion_product_rules r where r.promotion_id = v_promo.id and r.product_id = p.id and r.excluded = false))
-      and (not exists(select 1 from public.promotion_category_rules r where r.promotion_id = v_promo.id)
-           or exists(select 1 from public.promotion_category_rules r where r.promotion_id = v_promo.id and r.category_id = p.category_id))
-      and not exists(select 1 from public.promotion_product_rules r where r.promotion_id = v_promo.id and r.product_id = p.id and r.excluded = true);
-    if v_eligible <= 0 then raise exception 'PROMOTION_INELIGIBLE'; end if;
+    -- Every percentage/fixed promotion is global: merchandise plus the active
+    -- delivery charge form its base. Historical eligibility rules are ignored.
     if v_promo.kind = 'percentage' then
-      v_discount := floor(v_eligible * v_promo.value / 100.0)::bigint;
+      v_discount := floor((v_subtotal + v_shipping) * v_promo.value / 100.0)::bigint;
     elsif v_promo.kind = 'fixed' then
       v_discount := v_promo.value;
     elsif v_promo.kind = 'free_shipping' then
       v_shipping := 0;
     else raise exception 'PROMOTION_INVALID';
     end if;
-    v_discount := least(v_eligible, v_discount, coalesce(v_promo.max_discount_grosz::bigint, v_discount));
+    v_discount := least(v_subtotal + v_shipping, v_discount, coalesce(v_promo.max_discount_grosz::bigint, v_discount));
     update public.promotions set used_count = used_count + 1 where id = v_promo.id;
   end if;
   v_total := v_subtotal - v_discount + v_shipping;

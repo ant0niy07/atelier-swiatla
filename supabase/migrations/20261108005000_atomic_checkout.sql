@@ -5,7 +5,7 @@ declare
   v_key uuid := (p_request->>'idempotencyKey')::uuid;
   v_hash text := p_request->>'requestHash'; v_existing_hash text; v_existing_order_id uuid; v_order public.orders; v_customer uuid;
   v_delivery public.delivery_methods; v_promo public.promotions; v_item jsonb; v_product public.products;
-  v_subtotal integer := 0; v_eligible integer := 0; v_discount integer := 0; v_shipping integer := 0; v_total integer; v_code text := null;
+  v_subtotal integer := 0; v_discount integer := 0; v_shipping integer := 0; v_total integer; v_code text := null;
   v_payment text := p_request->>'paymentMethod'; v_note text := coalesce(p_request->>'note','');
 begin
   -- Serialise equal idempotency keys before the unique insert. This makes an
@@ -34,17 +34,17 @@ begin
     if not v_product.made_to_order and v_product.stock_on_hand-v_product.stock_reserved < (v_item->>'quantity')::integer then raise exception 'STOCK_INVALID'; end if;
     v_subtotal:=v_subtotal+v_product.price_grosz*(v_item->>'quantity')::integer;
   end loop;
+  v_shipping:=v_delivery.rate_grosz;
   v_code:=nullif(upper(trim(p_request->>'promoCode')),'');
   if v_code is not null then
     select * into v_promo from public.promotions where code=v_code and active=true and archived_at is null and starts_at<=now() and (ends_at is null or ends_at>now()) for update;
     if not found or (v_promo.usage_limit is not null and v_promo.used_count>=v_promo.usage_limit) or v_subtotal<v_promo.min_order_grosz then raise exception 'PROMOTION_INVALID'; end if;
-    select coalesce(sum(p.price_grosz*(x->>'quantity')::integer),0) into v_eligible from jsonb_array_elements(p_request->'items') x join public.products p on p.sku=x->>'sku' where (not exists(select 1 from public.promotion_product_rules r where r.promotion_id=v_promo.id and r.excluded=false) or exists(select 1 from public.promotion_product_rules r where r.promotion_id=v_promo.id and r.product_id=p.id and r.excluded=false)) and (not exists(select 1 from public.promotion_category_rules r where r.promotion_id=v_promo.id) or exists(select 1 from public.promotion_category_rules r where r.promotion_id=v_promo.id and r.category_id=p.category_id)) and not exists(select 1 from public.promotion_product_rules r where r.promotion_id=v_promo.id and r.product_id=p.id and r.excluded=true);
-    if v_eligible=0 then raise exception 'PROMOTION_INELIGIBLE'; end if;
-    if v_promo.kind='percentage' then v_discount:=floor(v_eligible*v_promo.value/100.0)::integer; elsif v_promo.kind='fixed' then v_discount:=v_promo.value; else v_shipping:=0; end if;
-    v_discount:=least(v_eligible,coalesce(least(v_discount,v_promo.max_discount_grosz),v_discount));
+    -- All percentage/fixed codes apply to products and authoritative delivery.
+    -- Legacy product/category rules are intentionally ignored for new orders.
+    if v_promo.kind='percentage' then v_discount:=floor((v_subtotal+v_shipping)*v_promo.value/100.0)::integer; elsif v_promo.kind='fixed' then v_discount:=v_promo.value; elsif v_promo.kind='free_shipping' then v_shipping:=0; else raise exception 'PROMOTION_INVALID'; end if;
+    v_discount:=least(v_subtotal+v_shipping,coalesce(least(v_discount,v_promo.max_discount_grosz),v_discount));
     update public.promotions set used_count=used_count+1 where id=v_promo.id;
   end if;
-  if v_shipping=0 and (v_code is null or v_promo.kind<>'free_shipping') then v_shipping:=v_delivery.rate_grosz; end if;
   v_total:=greatest(0,v_subtotal-v_discount+v_shipping);
   insert into public.customers(email,first_name,last_name,phone) values(p_request#>>'{customer,email}',p_request#>>'{customer,firstName}',p_request#>>'{customer,lastName}',p_request#>>'{customer,phone}') on conflict(email) do update set first_name=excluded.first_name,last_name=excluded.last_name,phone=excluded.phone returning id into v_customer;
   insert into public.orders(customer_id,email,status,payment_status,manual_payment_status,fulfillment_status,payment_method,shipping_method,delivery_kind,shipping_grosz,subtotal_grosz,discount_grosz,total_grosz,promotion_code,address,customer_note,is_test) values(v_customer,p_request#>>'{customer,email}','pending_payment','awaiting',case when v_payment in ('cod','pay_on_local_delivery') then 'cod_pending' else 'awaiting_payment' end,case when v_payment='blik_before_dispatch' then 'awaiting_payment' else 'new' end,v_payment,v_delivery.label,v_delivery.kind,v_shipping,v_subtotal,v_discount,v_total,v_code,p_request->'customer',v_note,false) returning * into v_order;

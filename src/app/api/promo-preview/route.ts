@@ -20,13 +20,30 @@ export async function POST(request: Request) {
   ]);
   if (promotionError || productsError || deliveryError) return NextResponse.json({ error: 'QUOTE_UNAVAILABLE' }, { status: 503 });
   if (!promotion || promotion.archived_at || !products || products.length !== body.data.items.length || !delivery || delivery.rate_grosz === null || (promotion.usage_limit !== null && promotion.used_count >= promotion.usage_limit)) return NextResponse.json({ error: 'INVALID_PROMOTION' }, { status: 400 });
-  const [{ data: includeRules, error: includeError }, { data: categoryRules, error: categoryError }, { data: excludeRules, error: excludeError }] = await Promise.all([
-    db.from('promotion_product_rules').select('product_id').eq('promotion_id', promotion.id).eq('excluded', false),
-    db.from('promotion_category_rules').select('category_id').eq('promotion_id', promotion.id),
-    db.from('promotion_product_rules').select('product_id').eq('promotion_id', promotion.id).eq('excluded', true),
-  ]);
-  if (includeError || categoryError || excludeError) return NextResponse.json({ error: 'QUOTE_UNAVAILABLE' }, { status: 503 });
-  const result = calculatePromotion({ code: promotion.code, kind: promotion.kind, value: promotion.value, minOrderGrosz: promotion.min_order_grosz, maxDiscountGrosz: promotion.max_discount_grosz, active: promotion.active, startsAt: promotion.starts_at, endsAt: promotion.ends_at, eligibleProductIds: includeRules?.map((rule) => rule.product_id), eligibleCategories: categoryRules?.map((rule) => rule.category_id), excludedProductIds: excludeRules?.map((rule) => rule.product_id) }, body.data.items.map((item) => { const p = products.find((product) => product.sku === item.sku)!; return { productId: p.id, category: p.category_id ?? '', unitGrosz: p.price_grosz, quantity: item.quantity }; }));
+  // Percentage and fixed promotions are order-wide. Product/category rules are
+  // intentionally not read for new quotes; delivery is in the discount base.
+  const result = calculatePromotion(
+    {
+      code: promotion.code,
+      kind: promotion.kind,
+      value: promotion.value,
+      minOrderGrosz: promotion.min_order_grosz,
+      maxDiscountGrosz: promotion.max_discount_grosz,
+      active: promotion.active,
+      startsAt: promotion.starts_at,
+      endsAt: promotion.ends_at,
+    },
+    body.data.items.map((item) => {
+      const product = products.find((candidate) => candidate.sku === item.sku)!;
+      return {
+        productId: product.id,
+        category: product.category_id ?? '',
+        unitGrosz: product.price_grosz,
+        quantity: item.quantity,
+      };
+    }),
+    delivery.rate_grosz,
+  );
   if (!result.ok) return NextResponse.json({ error: result.reason }, { status: 400 });
   const subtotal = body.data.items.reduce((sum, item) => sum + products.find((p) => p.sku === item.sku)!.price_grosz * item.quantity, 0);
   if (delivery.minimum_order_grosz !== null && subtotal < delivery.minimum_order_grosz) return NextResponse.json({ error: 'DELIVERY_MINIMUM_NOT_MET', minimumOrderGrosz: delivery.minimum_order_grosz }, { status: 400 });
