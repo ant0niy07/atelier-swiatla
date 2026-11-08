@@ -63,7 +63,13 @@ export async function POST(request: Request) {
     // Promise which can be abandoned as soon as a serverless response ends.
     after(() => deliverPendingTelegram(data.orderId));
   }
-  return NextResponse.json(data);
+  const { data: operations } = await db.from('store_settings').select('value').eq('key', 'store_operations').maybeSingle();
+  const config = operations?.value as { blik_phone?: string } | undefined;
+  const blikRecipientPhone = data.paymentMethod === 'blik_before_dispatch' ? config?.blik_phone?.trim() : undefined;
+  // The RPC already rejects a BLIK order without this configured value. Keep
+  // the confirmation defensive if settings change between transaction and read.
+  if (data.paymentMethod === 'blik_before_dispatch' && !blikRecipientPhone) return NextResponse.json({ error: 'BLIK_NOT_CONFIGURED' }, { status: 503 });
+  return NextResponse.json({ ...data, blikRecipientPhone });
 }
 
 export async function GET() {
