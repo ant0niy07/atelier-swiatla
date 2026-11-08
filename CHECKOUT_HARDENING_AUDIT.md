@@ -2,7 +2,7 @@
 
 ## Scope and live-data boundary
 
-This review was performed against the repository at `3b7a5b2` and its
+This review was performed against the repository at `978de6f` and its
 forward-only changes. No production deployment, Supabase migration, live order,
 promotion, payment configuration, or customer record was changed.
 
@@ -19,6 +19,8 @@ promotion, payment configuration, or customer record was changed.
 | CHK-07 | high | Telegram could include PII embedded in free-text notes. | Telegram formatter excludes customer notes; notes stay in protected admin UI. | Privacy unit test passes. |
 | CHK-08 | medium | Retry could leave `sending` permanently stuck after a crash. | Lease-aware claim reclaims a `sending` record after 10 minutes, without modifying sent records. | Requires isolated PostgreSQL run. |
 | CHK-09 | medium | Public endpoints had no cross-instance throttling. | Service-role-only persistent fixed-window limiter with hashed request subject. | Unit test verifies no raw IP is stored by the route helper. |
+| CHK-10 | high | Telegram used an untracked background promise in a serverless handler. | Uses Next.js `after()`, backed by Vercel `waitUntil`; durable outbox remains recoverable if delivery does not run. | Typecheck/build pass; database lifecycle test pending. |
+| CHK-11 | high | Admin fulfillment edits could contradict order/payment fields. | The transition RPC atomically validates fulfillment/payment combinations, inventory movement and history. | SQL review; database transition tests pending. |
 
 ## Migration package and order
 
@@ -27,10 +29,11 @@ identified migration-history drift (`20261107121351` live versus
 `20261107120326` in this repository). Reconcile migration history first, then
 apply only these pending forward migrations in this exact order:
 
-1. `20261108003004_secure_promotion_reservations.sql`
+1. Do **not** replay repository migration `20261108003004_secure_promotion_reservations.sql`: its effect is already live under migration version `20261108015131`. Reconcile that equivalence in deployment records only after a schema comparison.
 2. `20261108005000_atomic_checkout.sql`
 3. `20261108005738_telegram_notification_log.sql`
 4. `20261108012726_checkout_inventory_outbox_hardening.sql`
+5. `20261108020616_tighten_privileged_function_grants.sql`
 
 Preflight: take a database backup; inspect `supabase_migrations.schema_migrations`;
 confirm the three earlier files are absent; verify `products.is_personalization_addon`,
@@ -41,7 +44,8 @@ verify the atomic order, item, reservation, redemption, outbox, and replay rows.
 
 ## Known verification boundary
 
-The local Supabase PostgreSQL endpoint at `127.0.0.1:54322` is unavailable and
-Docker is not available in this environment. Therefore database integration,
+The local Supabase PostgreSQL endpoint at `127.0.0.1:54322` is unavailable.
+Docker Desktop is installed, but its Engine cannot start because WSL2 is not
+installed on this Windows host. Therefore database integration,
 concurrency, RLS/grant, and browser E2E tests have not been represented as
 passing. The included unit suite does not replace those tests.

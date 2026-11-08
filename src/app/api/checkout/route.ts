@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { checkoutRequestHash } from '@/lib/checkout-hash';
@@ -58,7 +58,11 @@ export async function POST(request: Request) {
   const requestHash = checkoutRequestHash(body.data);
   const { data, error } = await db.rpc('create_checkout_order', { p_request: { ...body.data, requestHash } });
   if (error || !data?.orderId) return NextResponse.json({ error: rpcErrorCode(error?.message) }, { status: 400 });
-  if (!data.repeated) void deliverPendingTelegram(data.orderId);
+  if (!data.repeated) {
+    // `after` is backed by Vercel's waitUntil primitive, unlike an untracked
+    // Promise which can be abandoned as soon as a serverless response ends.
+    after(() => deliverPendingTelegram(data.orderId));
+  }
   return NextResponse.json(data);
 }
 

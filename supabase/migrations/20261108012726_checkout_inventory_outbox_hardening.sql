@@ -259,20 +259,37 @@ create or replace function public.transition_order_fulfillment(
   p_order_id uuid, p_next public.fulfillment_status, p_manual public.manual_payment_status,
   p_carrier text default null, p_tracking text default null, p_note text default ''
 ) returns void language plpgsql security definer set search_path=public as $$
-declare v_order public.orders; v_item record;
+declare
+  v_order public.orders;
+  v_item record;
+  v_next public.fulfillment_status := p_next;
+  v_manual public.manual_payment_status := p_manual;
+  v_order_status public.order_status;
+  v_payment_status public.payment_status;
 begin
   select * into v_order from public.orders where id = p_order_id for update;
   if not found then raise exception 'ORDER_NOT_FOUND'; end if;
-  if p_next <> v_order.fulfillment_status and not (
-    (v_order.fulfillment_status = 'new' and p_next in ('awaiting_payment','paid','processing','cancelled')) or
-    (v_order.fulfillment_status = 'awaiting_payment' and p_next in ('paid','cancelled')) or
-    (v_order.fulfillment_status = 'paid' and p_next in ('processing','cancelled')) or
-    (v_order.fulfillment_status = 'processing' and p_next in ('shipped','cancelled')) or
-    (v_order.fulfillment_status = 'shipped' and p_next = 'delivered') or
-    (p_next = v_order.fulfillment_status)
+  -- Explicit manual confirmation may advance an awaiting order to paid, but
+  -- no other payment state is inferred from a fulfillment click.
+  if v_manual = 'paid' and v_next in ('new', 'awaiting_payment') then v_next := 'paid'; end if;
+  if v_next = 'cancelled' and v_manual in ('awaiting_payment', 'cod_pending') then v_manual := 'cancelled'; end if;
+  if v_next <> v_order.fulfillment_status and not (
+    (v_order.fulfillment_status = 'new' and v_next in ('awaiting_payment','paid','processing','cancelled')) or
+    (v_order.fulfillment_status = 'awaiting_payment' and v_next in ('paid','cancelled')) or
+    (v_order.fulfillment_status = 'paid' and v_next in ('processing','cancelled')) or
+    (v_order.fulfillment_status = 'processing' and v_next in ('shipped','cancelled')) or
+    (v_order.fulfillment_status = 'shipped' and v_next = 'delivered') or
+    (v_next = v_order.fulfillment_status)
   ) then raise exception 'FULFILLMENT_TRANSITION_INVALID'; end if;
+  if v_next in ('paid', 'processing', 'shipped', 'delivered')
+    and v_order.payment_method = 'blik_before_dispatch' and v_manual not in ('paid', 'settled') then
+    raise exception 'PAYMENT_NOT_CONFIRMED';
+  end if;
+  if v_next = 'cancelled' and v_manual not in ('cancelled', 'paid', 'settled', 'carrier_collected') then
+    raise exception 'PAYMENT_TRANSITION_INVALID';
+  end if;
 
-  if p_next = 'cancelled' and v_order.fulfillment_status <> 'cancelled' then
+  if v_next = 'cancelled' and v_order.fulfillment_status <> 'cancelled' then
     for v_item in select oi.*, p.made_to_order from public.order_items oi join public.products p on p.id = oi.product_id
       where oi.order_id = p_order_id and oi.inventory_state = 'reserved' order by oi.sku for update of oi, p loop
       update public.products set stock_reserved = greatest(0, stock_reserved - v_item.quantity) where id = v_item.product_id;
@@ -283,7 +300,7 @@ begin
       where order_id = p_order_id and status = 'reserved' returning promotion_id
     ), counts as (select promotion_id, count(*) as count from released group by promotion_id)
     update public.promotions p set used_count = greatest(0, p.used_count - counts.count) from counts where p.id = counts.promotion_id;
-  elsif p_next = 'shipped' and v_order.fulfillment_status <> 'shipped' then
+  elsif v_next = 'shipped' and v_order.fulfillment_status <> 'shipped' then
     for v_item in select oi.* from public.order_items oi where oi.order_id = p_order_id and oi.inventory_state = 'reserved' order by oi.sku for update loop
       update public.products set stock_reserved = stock_reserved - v_item.quantity, stock_on_hand = stock_on_hand - v_item.quantity
       where id = v_item.product_id and stock_reserved >= v_item.quantity and stock_on_hand >= v_item.quantity;
@@ -291,11 +308,26 @@ begin
       update public.order_items set inventory_state = 'consumed' where id = v_item.id;
     end loop;
   end if;
-  update public.orders set fulfillment_status = p_next, manual_payment_status = p_manual,
+  v_order_status := case v_next
+    when 'new' then 'pending_payment'::public.order_status
+    when 'awaiting_payment' then 'pending_payment'::public.order_status
+    when 'paid' then 'paid'::public.order_status
+    when 'processing' then 'processing'::public.order_status
+    when 'shipped' then 'shipped'::public.order_status
+    when 'delivered' then 'shipped'::public.order_status
+    when 'cancelled' then 'cancelled'::public.order_status
+  end;
+  v_payment_status := case
+    when v_manual in ('paid', 'carrier_collected', 'settled') then 'confirmed'::public.payment_status
+    when v_manual = 'cancelled' then 'failed'::public.payment_status
+    else 'awaiting'::public.payment_status
+  end;
+  update public.orders set status = v_order_status, payment_status = v_payment_status,
+    fulfillment_status = v_next, manual_payment_status = v_manual,
     carrier_name = p_carrier, tracking_number = p_tracking,
-    paid_at = case when p_manual = 'paid' and paid_at is null then now() else paid_at end
+    paid_at = case when v_manual = 'paid' and paid_at is null then now() else paid_at end
   where id = p_order_id;
-  insert into public.order_status_history(order_id, status, note) values(p_order_id, v_order.status, left(coalesce(p_note,''), 2000));
+  insert into public.order_status_history(order_id, status, note) values(p_order_id, v_order_status, left(coalesce(p_note,''), 2000));
 end $$;
 revoke all on function public.transition_order_fulfillment(uuid, public.fulfillment_status, public.manual_payment_status, text, text, text) from public, anon, authenticated;
 grant execute on function public.transition_order_fulfillment(uuid, public.fulfillment_status, public.manual_payment_status, text, text, text) to service_role;
