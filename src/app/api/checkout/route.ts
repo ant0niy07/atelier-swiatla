@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createHash } from 'node:crypto';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { notifyTelegramOrder } from '@/lib/telegram';
+import { checkoutRequestHash } from '@/lib/checkout-hash';
 
 const schema = z.object({
   idempotencyKey: z.string().uuid(),
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   const db = getSupabaseAdmin(); const body = schema.safeParse(await request.json().catch(() => null));
   if (!db) return NextResponse.json({ error: 'CHECKOUT_UNAVAILABLE' }, { status: 503 });
   if (!body.success || new Set(body.data.items.map((item) => item.sku)).size !== body.data.items.length) return NextResponse.json({ error: 'INVALID_ORDER' }, { status: 400 });
-  const requestHash = createHash('sha256').update(JSON.stringify({ customer: body.data.customer, items: body.data.items, deliveryMethodId: body.data.deliveryMethodId, paymentMethod: body.data.paymentMethod, promoCode: body.data.promoCode ?? '', note: body.data.note ?? '' })).digest('hex');
+  const requestHash = checkoutRequestHash({ customer: body.data.customer, items: body.data.items, deliveryMethodId: body.data.deliveryMethodId, paymentMethod: body.data.paymentMethod, promoCode: body.data.promoCode ?? '', note: body.data.note ?? '' });
   const { data, error } = await db.rpc('create_checkout_order', { p_request: { ...body.data, requestHash } });
   if (error || !data?.orderId) return NextResponse.json({ error: 'ORDER_REJECTED' }, { status: 400 });
   if (!data.repeated) {
