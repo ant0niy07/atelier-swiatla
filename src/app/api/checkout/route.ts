@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   if (error || !data?.orderId) return NextResponse.json({ error: 'ORDER_REJECTED' }, { status: 400 });
   if (!data.repeated) {
     const { data: notificationOrder } = await db.from('orders').select('order_number,total_grosz,customer_note,order_items(product_name,quantity)').eq('id', data.orderId).single();
-    if (notificationOrder) await notifyTelegramOrder(notificationOrder);
+    if (notificationOrder) { const notification = await notifyTelegramOrder(notificationOrder); await db.from('telegram_notifications').upsert({ order_id: data.orderId, status: notification.sent ? 'sent' : 'failed', attempts: 1, last_error: notification.sent ? null : notification.reason ?? 'SEND_FAILED', sent_at: notification.sent ? new Date().toISOString() : null }, { onConflict: 'order_id' }); }
   }
   return NextResponse.json(data);
 }
