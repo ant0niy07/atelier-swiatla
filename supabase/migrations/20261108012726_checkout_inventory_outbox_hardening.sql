@@ -62,6 +62,7 @@ declare
   v_key uuid;
   v_hash text;
   v_existing_hash text;
+  v_existing_order_id uuid;
   v_order public.orders;
   v_customer uuid;
   v_delivery public.delivery_methods;
@@ -93,13 +94,14 @@ begin
   if v_hash is null or v_hash !~ '^[a-f0-9]{64}$' then raise exception 'IDEMPOTENCY_INVALID'; end if;
   perform pg_advisory_xact_lock(hashtext(v_key::text));
 
-  select i.request_hash, o.* into v_existing_hash, v_order
+  select i.request_hash, i.order_id into v_existing_hash, v_existing_order_id
   from public.checkout_idempotency i
-  left join public.orders o on o.id = i.order_id
   where i.idempotency_key = v_key;
   if found then
     if v_existing_hash <> v_hash then raise exception 'IDEMPOTENCY_CONFLICT'; end if;
-    if v_order.id is null then raise exception 'IDEMPOTENCY_IN_PROGRESS'; end if;
+    if v_existing_order_id is null then raise exception 'IDEMPOTENCY_IN_PROGRESS'; end if;
+    select * into v_order from public.orders where id = v_existing_order_id;
+    if not found then raise exception 'IDEMPOTENCY_IN_PROGRESS'; end if;
     return jsonb_build_object(
       'orderId', v_order.id, 'orderNumber', v_order.order_number,
       'totalGrosz', v_order.total_grosz, 'paymentMethod', v_order.payment_method,

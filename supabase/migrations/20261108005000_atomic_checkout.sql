@@ -3,7 +3,7 @@ create or replace function public.create_checkout_order(p_request jsonb)
 returns jsonb language plpgsql security definer set search_path=public as $$
 declare
   v_key uuid := (p_request->>'idempotencyKey')::uuid;
-  v_hash text := p_request->>'requestHash'; v_existing_hash text; v_order public.orders; v_customer uuid;
+  v_hash text := p_request->>'requestHash'; v_existing_hash text; v_existing_order_id uuid; v_order public.orders; v_customer uuid;
   v_delivery public.delivery_methods; v_promo public.promotions; v_item jsonb; v_product public.products;
   v_subtotal integer := 0; v_eligible integer := 0; v_discount integer := 0; v_shipping integer := 0; v_total integer; v_code text := null;
   v_payment text := p_request->>'paymentMethod'; v_note text := coalesce(p_request->>'note','');
@@ -13,8 +13,15 @@ begin
   perform pg_advisory_xact_lock(hashtext(v_key::text));
   if jsonb_typeof(p_request->'items')<>'array' or jsonb_array_length(p_request->'items')=0 or jsonb_array_length(p_request->'items')>20 then raise exception 'ITEMS_INVALID'; end if;
   if v_payment not in ('blik_before_dispatch','cod','pay_on_local_delivery') then raise exception 'PAYMENT_INVALID'; end if;
-  select i.request_hash,o.* into v_existing_hash,v_order from public.checkout_idempotency i left join public.orders o on o.id=i.order_id where i.idempotency_key=v_key;
-  if found then if v_existing_hash<>v_hash then raise exception 'IDEMPOTENCY_CONFLICT'; end if; if v_order.id is not null then return jsonb_build_object('orderId',v_order.id,'orderNumber',v_order.order_number,'repeated',true); end if; raise exception 'IDEMPOTENCY_IN_PROGRESS'; end if;
+  select i.request_hash, i.order_id into v_existing_hash, v_existing_order_id from public.checkout_idempotency i where i.idempotency_key=v_key;
+  if found then
+    if v_existing_hash<>v_hash then raise exception 'IDEMPOTENCY_CONFLICT'; end if;
+    if v_existing_order_id is not null then
+      select * into v_order from public.orders where id=v_existing_order_id;
+      if found then return jsonb_build_object('orderId',v_order.id,'orderNumber',v_order.order_number,'totalGrosz',v_order.total_grosz,'paymentMethod',v_order.payment_method,'paymentStatus',v_order.manual_payment_status,'repeated',true); end if;
+    end if;
+    raise exception 'IDEMPOTENCY_IN_PROGRESS';
+  end if;
   insert into public.checkout_idempotency(idempotency_key,request_hash) values(v_key,v_hash);
   select * into v_delivery from public.delivery_methods where id=(p_request->>'deliveryMethodId')::uuid and active=true for update;
   if not found or v_delivery.rate_grosz is null then raise exception 'DELIVERY_INVALID'; end if;
