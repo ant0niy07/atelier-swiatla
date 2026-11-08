@@ -23,4 +23,9 @@ describe('authoritative global promotion checkout migration', () => {
     expect(sql).not.toContain('promotion_product_rules');
     expect(sql).not.toContain('promotion_category_rules');
   });
+
+  it('keeps the checkout order-status CASE expressions explicitly typed', () => {
+    expect(sql).toContain('end)::public.manual_payment_status');
+    expect(sql).toContain('end)::public.fulfillment_status');
+  });
 });

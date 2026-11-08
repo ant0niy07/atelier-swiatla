@@ -224,8 +224,8 @@ begin
     payment_method, shipping_method, delivery_kind, locker_code, shipping_grosz, subtotal_grosz, discount_grosz,
     total_grosz, promotion_code, address, customer_note, is_test, reservation_expires_at)
   values(v_customer, v_email, 'pending_payment', 'awaiting',
-    case when v_payment in ('cod','pay_on_local_delivery') then 'cod_pending' else 'awaiting_payment' end,
-    case when v_payment = 'blik_before_dispatch' then 'awaiting_payment' else 'new' end,
+    (case when v_payment in ('cod','pay_on_local_delivery') then 'cod_pending' else 'awaiting_payment' end)::public.manual_payment_status,
+    (case when v_payment = 'blik_before_dispatch' then 'awaiting_payment' else 'new' end)::public.fulfillment_status,
     v_payment, v_delivery.label, v_delivery.kind, v_locker, v_shipping::integer, v_subtotal::integer,
     v_discount::integer, v_total::integer, v_code, p_request->'customer', v_note, false,
     case when v_payment = 'blik_before_dispatch' then now() + interval '48 hours' else null end)
