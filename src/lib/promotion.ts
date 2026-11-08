@@ -8,6 +8,7 @@ export function calculatePromotion(p:Promotion|undefined,lines:CartLine[],now=ne
  if(new Date(p.startsAt)>now)return {ok:false,reason:'future'};if(p.endsAt&&new Date(p.endsAt)<=now)return {ok:false,reason:'expired'};
  const subtotal=lines.reduce((s,l)=>s+money(l.unitGrosz)*Math.max(0,Math.floor(l.quantity)),0);if(!subtotal)return {ok:false,reason:'empty'};if(subtotal<p.minOrderGrosz)return {ok:false,reason:'minimum'};
  const eligible=lines.filter(l=>(!p.eligibleProductIds?.length||p.eligibleProductIds.includes(l.productId))&&(!p.eligibleCategories?.length||p.eligibleCategories.includes(l.category))&&!p.excludedProductIds?.includes(l.productId)).reduce((s,l)=>s+money(l.unitGrosz)*Math.max(0,Math.floor(l.quantity)),0);
+ if(!eligible)return {ok:false,reason:'empty'};
  if(p.kind==='free_shipping')return {ok:true,code:normalizePromotionCode(p.code),discountGrosz:0,freeShipping:true,eligibleSubtotalGrosz:eligible};
  const raw=p.kind==='percentage'?Math.floor(eligible*p.value/100):p.value;const capped=p.maxDiscountGrosz==null?raw:Math.min(raw,p.maxDiscountGrosz);
  return {ok:true,code:normalizePromotionCode(p.code),discountGrosz:Math.min(eligible,money(capped)),freeShipping:false,eligibleSubtotalGrosz:eligible};

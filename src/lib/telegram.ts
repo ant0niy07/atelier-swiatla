@@ -1,9 +1,10 @@
-type TelegramOrder = { order_number: number; total_grosz: number; customer_note: string | null; order_items: Array<{ product_name: string; quantity: number }> };
+type TelegramOrder = { order_number: number; total_grosz: number; order_items: Array<{ product_name: string; quantity: number }> };
 
 function message(order: TelegramOrder) {
   const lines = order.order_items.map((item) => `• ${item.product_name} — ${item.quantity} szt.`).join('\n');
-  const note = order.customer_note?.trim() ? `\n\n📝 Uwagi do zamówienia:\n${order.customer_note.trim().slice(0, 1000)}` : '';
-  return `🕯 ATELIER ŚWIEC\n\n🛒 Nowe zamówienie nr ${order.order_number}\n\n📦 Produkty:\n${lines}\n\n💰 Suma: ${(order.total_grosz / 100).toFixed(2)} zł${note}`;
+  // Customer notes are unstructured and can contain a phone number, address,
+  // or other personal data. They remain in the protected admin panel only.
+  return `🕯 ATELIER ŚWIEC\n\n🛒 Nowe zamówienie nr ${order.order_number}\n\n📦 Produkty:\n${lines}\n\n💰 Suma: ${(order.total_grosz / 100).toFixed(2)} zł`;
 }
 
 export async function sendTelegram(text: string) {

@@ -11,6 +11,15 @@ export function OrderEditor({ order }: { order: any }) {
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const address = order.address ?? {};
+  const notification = Array.isArray(order.telegram_notifications) ? order.telegram_notifications[0] : order.telegram_notifications;
+  async function retryTelegram() {
+    setSaving(true);
+    const response = await fetch('/api/admin/telegram-retry', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: order.id }) });
+    const data = await response.json().catch(() => ({}));
+    setSaving(false);
+    setMessage(response.ok ? 'Powiadomienie Telegram zostało wysłane.' : data.error === 'NOT_RETRYABLE' ? 'Powiadomienie nie wymaga ponownej wysyłki albo jest już wysyłane.' : 'Nie udało się wysłać powiadomienia Telegram.');
+    if (response.ok) router.refresh();
+  }
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -42,5 +51,6 @@ export function OrderEditor({ order }: { order: any }) {
       <div className="admin-form-actions"><button className="btn" disabled={saving} type="submit">{saving ? 'Zapisywanie…' : 'Zapisz zmiany'}</button>{message && <p role="status">{message}</p>}</div>
     </form>
     <section className="admin-order-card"><h2>Historia</h2>{order.order_status_history?.length ? order.order_status_history.map((entry: any, index: number) => <p key={index}>{new Date(entry.created_at).toLocaleString('pl-PL')} · {entry.status}{entry.note ? ` — ${entry.note}` : ''}</p>) : <p>Brak zapisów historii.</p>}</section>
+    {notification && <section className="admin-order-card"><h2>Telegram</h2><p>Status: <strong>{notification.status}</strong><br />Próby: {notification.attempts}{notification.last_error ? <><br />Ostatni błąd: {notification.last_error}</> : null}{notification.sent_at ? <><br />Wysłano: {new Date(notification.sent_at).toLocaleString('pl-PL')}</> : null}</p>{notification.status !== 'sent' && <button className="btn ghost" disabled={saving} onClick={retryTelegram} type="button">Ponów powiadomienie</button>}</section>}
   </div>;
 }

@@ -24,23 +24,35 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const body = schema.safeParse(await request.json().catch(() => null));
   if (!body.success || !Object.keys(body.data).length) return NextResponse.json({ error: 'Nieprawidłowe dane.' }, { status: 400 });
   const { id } = await params;
-  const { data: current } = await db.from('orders').select('fulfillment_status,manual_payment_status').eq('id', id).maybeSingle();
+  const { data: current } = await db.from('orders').select('fulfillment_status,manual_payment_status,carrier_name,tracking_number').eq('id', id).maybeSingle();
   if (!current) return NextResponse.json({ error: 'Nie znaleziono zamówienia.' }, { status: 404 });
   if (body.data.fulfillment_status && body.data.fulfillment_status !== current.fulfillment_status && !canTransitionFulfillment(current.fulfillment_status as FulfillmentStatus, body.data.fulfillment_status)) {
     return NextResponse.json({ error: 'Niedozwolona zmiana etapu realizacji.' }, { status: 400 });
   }
 
-  const { internal_note, is_test, ...changes } = body.data;
+  const { internal_note, is_test, fulfillment_status, manual_payment_status, carrier_name, tracking_number } = body.data;
   // Classification is deliberately independent from fulfillment. A restored test
   // order keeps its original status and payment/audit history rather than being
   // silently left in the cancelled state.
-  const update = is_test === undefined ? changes : { ...changes, is_test, hidden_at: is_test ? new Date().toISOString() : null };
-  const { error } = await db.from('orders').update(update).eq('id', id);
-  if (error) return NextResponse.json({ error: 'Nie udało się zapisać zmian.' }, { status: 500 });
-  if (body.data.fulfillment_status || internal_note || is_test !== undefined) {
+  if (fulfillment_status || manual_payment_status || carrier_name !== undefined || tracking_number !== undefined || internal_note) {
+    const { error } = await db.rpc('transition_order_fulfillment', {
+      p_order_id: id,
+      p_next: fulfillment_status ?? current.fulfillment_status,
+      p_manual: manual_payment_status ?? current.manual_payment_status,
+      p_carrier: carrier_name === undefined ? current.carrier_name : carrier_name,
+      p_tracking: tracking_number === undefined ? current.tracking_number : tracking_number,
+      p_note: internal_note ?? '',
+    });
+    if (error) return NextResponse.json({ error: 'Nie udało się bezpiecznie zapisać zmian.' }, { status: 400 });
+  }
+  if (is_test !== undefined) {
+    const { error } = await db.from('orders').update({ is_test, hidden_at: is_test ? new Date().toISOString() : null }).eq('id', id);
+    if (error) return NextResponse.json({ error: 'Nie udało się zapisać klasyfikacji.' }, { status: 500 });
+  }
+  if (is_test !== undefined) {
     await db.from('order_status_history').insert({
       order_id: id,
-      status: body.data.fulfillment_status ?? current.fulfillment_status,
+      status: fulfillment_status ?? current.fulfillment_status,
       note: internal_note ?? (is_test ? 'TEST_ORDER_HIDDEN' : is_test === false ? 'TEST_ORDER_RESTORED' : ''),
     });
   }

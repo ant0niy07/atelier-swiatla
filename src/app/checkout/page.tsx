@@ -17,53 +17,74 @@ export default function Checkout() {
   const items = useCart((state) => state.items);
   const clear = useCart((state) => state.clear);
   const [attempted, setAttempted] = useState(false);
-  const [deliveryMethods, setDeliveryMethods] = useState<Array<{id:string;label:string;kind:string;rate_grosz:number;supports_blik_before_dispatch:boolean;supports_cod:boolean}>>([]);
+  const [deliveryMethods, setDeliveryMethods] = useState<Array<{id:string;label:string;kind:string;rate_grosz:number;minimum_order_grosz:number|null;supports_blik_before_dispatch:boolean;supports_cod:boolean}>>([]);
+  const [acceptingOrders, setAcceptingOrders] = useState(true);
+  const [blikAvailable, setBlikAvailable] = useState(false);
   const [deliveryMethodId, setDeliveryMethodId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [status, setStatus] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
+  const [checkoutAttempt, setCheckoutAttempt] = useState<{key:string;fingerprint:string}|null>(null);
   const [promoCode, setPromoCode] = useState('');
   const [promo, setPromo] = useState<{discountGrosz:number;shippingGrosz:number;totalGrosz:number;code:string;fingerprint:string}|null>(null);
   const [promoMessage, setPromoMessage] = useState('');
   const previewRequest = useRef(0);
   const lines = useMemo(() => items, [items]);
   const subtotal = lines.reduce((sum, line) => sum + line.quantity * line.price_grosz, 0);
-  const orderFingerprint = `${deliveryMethodId}:${lines.map((line) => `${line.sku}:${line.quantity}`).join('|')}`;
+  const orderFingerprint = `${deliveryMethodId}:${paymentMethod}:${lines.map((line) => `${line.sku}:${line.variantId??''}:${line.quantity}`).sort().join('|')}`;
 
-  useEffect(() => { fetch('/api/checkout').then(async (response) => response.ok ? response.json() : Promise.reject()).then((data) => setDeliveryMethods(data.deliveryMethods ?? [])).catch(() => setStatus(t(locale).deliveryError)); }, [locale]);
+  useEffect(() => { fetch('/api/checkout').then(async (response) => response.ok ? response.json() : Promise.reject()).then((data) => { setDeliveryMethods(data.deliveryMethods ?? []); setAcceptingOrders(data.acceptingOrders !== false); setBlikAvailable(Boolean(data.blikAvailable)); }).catch(() => setStatus(t(locale).deliveryError)); }, [locale, text.deliveryError]);
   const selectedDelivery = deliveryMethods.find((method) => method.id === deliveryMethodId);
   async function applyPromo() {
     if (!promoCode.trim() || !deliveryMethodId) { setPromoMessage(locale === 'ru' ? 'Сначала выберите доставку и введите код.' : 'Najpierw wybierz dostawę i wpisz kod.'); return; }
     const requestId = ++previewRequest.current;
     setPromoMessage(locale === 'ru' ? 'Проверка кода…' : 'Sprawdzanie kodu…');
-    const response = await fetch('/api/promo-preview', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ code: promoCode, deliveryMethodId, items: lines.map((item) => ({ sku:item.sku, quantity:item.quantity })) }) });
-    const data = await response.json().catch(() => ({}));
-    if (requestId !== previewRequest.current) return;
-    if (response.ok) { setPromo({ ...data, fingerprint: orderFingerprint }); setPromoMessage(locale === 'ru' ? 'Промокод применён.' : 'Kod rabatowy został zastosowany.'); } else { setPromo(null); setPromoMessage(locale === 'ru' ? 'Промокод недействителен или условия не выполнены.' : 'Kod rabatowy jest nieważny lub warunki nie są spełnione.'); }
+    try {
+      const response = await fetch('/api/promo-preview', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ code: promoCode, deliveryMethodId, items: lines.map((item) => ({ sku:item.sku, quantity:item.quantity })) }) });
+      const data = await response.json().catch(() => ({}));
+      if (requestId !== previewRequest.current) return;
+      if (response.ok) { setPromo({ ...data, fingerprint: orderFingerprint }); setPromoMessage(locale === 'ru' ? 'Промокод применён.' : 'Kod rabatowy został zastosowany.'); }
+      else if (data.error === 'DELIVERY_MINIMUM_NOT_MET') setPromoMessage(locale === 'ru' ? 'Не достигнута минимальная сумма для выбранной доставки.' : 'Nie osiągnięto minimalnej kwoty dla wybranej dostawy.');
+      else setPromoMessage(locale === 'ru' ? 'Промокод недействителен или условия не выполнены.' : 'Kod rabatowy jest nieważny lub warunki nie są spełnione.');
+    } catch {
+      if (requestId === previewRequest.current) { setPromo(null); setPromoMessage(locale === 'ru' ? 'Не удалось проверить код. Попробуйте снова.' : 'Nie udało się sprawdzić kodu. Spróbuj ponownie.'); }
+    }
   }
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAttempted(true);
     const form = new FormData(event.currentTarget);
+    if (!acceptingOrders) { setStatus(locale === 'ru' ? 'Приём заказов временно приостановлен.' : 'Przyjmowanie zamówień jest chwilowo wstrzymane.'); return; }
     if (!selectedDelivery || !paymentMethod || lines.length === 0) { setStatus(text.selectDelivery); return; }
-    const key = idempotencyKey ?? crypto.randomUUID();
-    if (!idempotencyKey) setIdempotencyKey(key);
+    if (selectedDelivery.minimum_order_grosz !== null && subtotal < selectedDelivery.minimum_order_grosz) { setStatus(locale === 'ru' ? 'Не достигнута минимальная сумма для выбранной доставки.' : 'Nie osiągnięto minimalnej kwoty dla wybranej dostawy.'); return; }
+    const draft = {
+      deliveryMethodId, paymentMethod, promoCode: String(form.get('promotion') || ''), note: String(form.get('note') || ''), lockerCode: String(form.get('lockerCode') || ''),
+      customer: { firstName: String(form.get('firstName') || ''), lastName: String(form.get('lastName') || ''), email: String(form.get('email') || ''), phone: String(form.get('phone') || ''), street: String(form.get('street') || ''), postalCode: String(form.get('postalCode') || ''), city: String(form.get('city') || '') },
+      items: lines.map((item) => ({ sku: item.sku, variantId: item.variantId, quantity: item.quantity })),
+    };
+    const fingerprint = JSON.stringify(draft);
+    const key = checkoutAttempt?.fingerprint === fingerprint ? checkoutAttempt.key : crypto.randomUUID();
+    if (checkoutAttempt?.fingerprint !== fingerprint) setCheckoutAttempt({ key, fingerprint });
     setSubmitting(true);
     setStatus(text.creating);
     try {
       const response = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-        idempotencyKey: key, deliveryMethodId, paymentMethod, promoCode: form.get('promotion') || undefined, note: form.get('note') || undefined,
-        customer: { firstName: form.get('firstName'), lastName: form.get('lastName'), email: form.get('email'), phone: form.get('phone'), street: form.get('street'), postalCode: form.get('postalCode'), city: form.get('city') },
-        items: lines.map((item) => ({ sku: item.sku, variantId: item.variantId, quantity: item.quantity })),
+        idempotencyKey: key, ...draft,
       }) });
       const data = await response.json().catch(() => ({}));
       if (response.ok && data.orderNumber) {
         clear();
-        setIdempotencyKey(null);
-        setStatus(text.orderSuccess.replace('{number}', String(data.orderNumber)));
+        setCheckoutAttempt(null);
+        setStatus(`${text.orderSuccess.replace('{number}', String(data.orderNumber))} ${formatPrice(data.totalGrosz)}`);
       } else {
-        setStatus(data.error ?? text.orderError);
+        const errors:Record<string,string>={
+          DELIVERY_MINIMUM_NOT_MET:locale==='ru'?'Не достигнута минимальная сумма для выбранной доставки.':'Nie osiągnięto minimalnej kwoty dla wybranej dostawy.',
+          BLIK_NOT_CONFIGURED:locale==='ru'?'Ручной BLIK временно недоступен: продавец не настроил номер получателя.':'Ręczny BLIK jest chwilowo niedostępny: sprzedawca nie skonfigurował numeru odbiorcy.',
+          IDEMPOTENCY_CONFLICT:locale==='ru'?'Данные заказа изменились. Проверьте форму и отправьте заказ снова.':'Dane zamówienia zostały zmienione. Sprawdź formularz i wyślij zamówienie ponownie.',
+          LOCKER_INVALID:locale==='ru'?'Введите корректный код постамата.':'Wpisz poprawny kod Paczkomatu.',
+          STOCK_INVALID:locale==='ru'?'Один из товаров больше недоступен.':'Jeden z produktów nie jest już dostępny.',
+        };
+        setStatus(errors[data.error] ?? text.orderError);
       }
     } catch {
       setStatus(text.networkError);
@@ -85,12 +106,13 @@ export default function Checkout() {
         <label className="field">{text.delivery}
           <select name="shipping" onChange={(event) => { previewRequest.current+=1; setPromo(null);setPromoMessage('');setDeliveryMethodId(event.target.value); setPaymentMethod(''); }} required value={deliveryMethodId}><option value="">{text.choose}</option>{deliveryMethods.map((method) => <option key={method.id} value={method.id}>{method.label} — {formatPrice(method.rate_grosz)}</option>)}</select>
         </label>
+        {selectedDelivery?.kind === 'inpost_locker' || selectedDelivery?.kind === 'inpost_locker_cod' ? <label className="field">{locale==='ru'?'Код постамата InPost':'Kod Paczkomatu InPost'}<input name="lockerCode" required placeholder="np. WAW01A" pattern="[A-Za-z0-9_-]{3,40}" /></label> : null}
         <label className="field">{text.payment}
-          <select disabled={!selectedDelivery} name="payment" onChange={(event) => setPaymentMethod(event.target.value)} required value={paymentMethod}><option value="">{text.choose}</option>{selectedDelivery?.supports_blik_before_dispatch && <option value="blik_before_dispatch">{text.blik}</option>}{selectedDelivery?.supports_cod && <option value="cod">{text.cod}</option>}{selectedDelivery?.kind === 'local_warsaw' && <option value="pay_on_local_delivery">{text.localPayment}</option>}</select>
+          <select disabled={!selectedDelivery} name="payment" onChange={(event) => setPaymentMethod(event.target.value)} required value={paymentMethod}><option value="">{text.choose}</option>{selectedDelivery?.supports_blik_before_dispatch && blikAvailable && <option value="blik_before_dispatch">{text.blik}</option>}{selectedDelivery?.supports_cod && <option value="cod">{text.cod}</option>}{selectedDelivery?.kind === 'local_warsaw' && <option value="pay_on_local_delivery">{text.localPayment}</option>}</select>
         </label>
         <label className="field">{text.promo}<span className="promo-row"><input name="promotion" value={promoCode} onChange={(event)=>{previewRequest.current+=1;setPromoCode(event.target.value);setPromo(null);setPromoMessage('')}} placeholder={text.optional} type="text" /><button className="btn ghost" onClick={applyPromo} type="button">{locale==='ru'?'Применить':'Zastosuj'}</button></span>{promoMessage&&<small role="status">{promoMessage}</small>}</label>
         <label className="field">{text.notes}<textarea name="note" placeholder={text.optional} rows={3} /></label>
-        <button className="btn" disabled={submitting} type="submit">{submitting ? text.creating : text.createOrder}</button>
+        <button className="btn" disabled={submitting || !acceptingOrders} type="submit">{submitting ? text.creating : text.createOrder}</button>
         {(attempted || status) && <p className="checkout-status" role="status">{status}</p>}
       </section>
       <aside className="summary">
