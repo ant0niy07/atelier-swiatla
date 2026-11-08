@@ -1,0 +1,3 @@
+import { requireAdmin } from '@/lib/admin-auth';
+import { AdminBackLink } from '@/components/admin-back-link';
+export default async function Customers(){const {client}=await requireAdmin();const {data}=await client.from('customers').select('id,email,first_name,last_name,phone,created_at').order('created_at',{ascending:false});return <main className="wrap product-page-dark"><AdminBackLink/><span className="eyebrow">Prywatne dane</span><h1 className="serif">Klienci</h1>{data?.map(c=><p key={c.id}>{c.first_name} {c.last_name} · {c.email} · {c.phone}</p>)}</main>}

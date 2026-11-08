@@ -1,0 +1,86 @@
+.interactive-flame {
+  --flame-size: 76px;
+  --flame-bend: 0deg;
+  --flame-drift: 0px;
+  position: relative;
+  display: block;
+  width: var(--flame-size);
+  height: calc(var(--flame-size) * 1.42);
+  pointer-events: none;
+  transform: translateX(var(--flame-drift));
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 0 9px rgba(255, 177, 61, 0.62));
+}
+
+.interactive-flame__svg {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.interactive-flame__halo {
+  position: absolute;
+  z-index: 0;
+  inset: 22% 8% 3%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 209, 118, 0.72), rgba(255, 157, 39, 0.18) 48%, transparent 73%);
+  filter: blur(11px);
+  animation: flame-halo 2.6s ease-in-out infinite alternate;
+}
+
+.interactive-flame__body {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  transform: rotate(var(--flame-bend));
+  animation: flame-flicker 1.85s ease-in-out infinite alternate;
+}
+
+.interactive-flame__outer {
+  transform-origin: center bottom;
+  animation: flame-breathe 2.9s ease-in-out infinite alternate;
+}
+
+.interactive-flame__core {
+  transform-origin: center bottom;
+  animation: flame-core 1.3s ease-in-out infinite alternate;
+}
+
+@keyframes flame-flicker {
+  0% { transform: rotate(calc(var(--flame-bend) - 1.4deg)) scaleX(0.93) scaleY(1.03); }
+  48% { transform: rotate(calc(var(--flame-bend) + 1deg)) scaleX(1.03) scaleY(0.97); }
+  100% { transform: rotate(calc(var(--flame-bend) - 0.55deg)) scaleX(0.98) scaleY(1.01); }
+}
+
+@keyframes flame-breathe {
+  from { opacity: 0.9; }
+  to { opacity: 1; }
+}
+
+@keyframes flame-core {
+  from { transform: translateY(1px) scale(0.88, 0.96); }
+  to { transform: translateY(-1px) scale(1.08, 1.03); }
+}
+
+@keyframes flame-halo {
+  from { opacity: 0.48; transform: scale(0.88); }
+  to { opacity: 0.82; transform: scale(1.1); }
+}
+
+.interactive-flame--still .interactive-flame__halo,
+.interactive-flame--still .interactive-flame__body,
+.interactive-flame--still .interactive-flame__outer,
+.interactive-flame--still .interactive-flame__core {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interactive-flame__halo,
+  .interactive-flame__body,
+  .interactive-flame__outer,
+  .interactive-flame__core {
+    animation: none;
+  }
+}

@@ -1,3 +1,58 @@
-import {notFound} from 'next/navigation'; import {getProduct,formatPrice} from '@/data/products'; import {ProductArt} from '@/components/site';
-export function generateStaticParams(){return ['swieca-choinka-3d','piernikowy-ludzik','winter-amber','winter-mini'].map(slug=>({slug}))}
-export default async function ProductPage({params}:{params:Promise<{slug:string}>}){const p=getProduct((await params).slug);if(!p)return notFound();return <div className="wrap product-page"><div className="gallery"><ProductArt product={p} large/></div><article><span className="tag">Kolekcja w przygotowaniu</span><h1>{p.name}</h1><p style={{fontSize:20}}>{formatPrice(p.price)}</p><p style={{lineHeight:1.8}}>{p.description}</p>{p.variants&&<><p className="eyebrow" style={{marginTop:30}}>Planowane warianty zapachowe</p><div className="variants">{p.variants.map(v=><button className="filter" key={v.id} disabled>{v.name}</button>)}</div></>}<div className="notice"><strong>Produkt podglądowy.</strong> Ten produkt nie jest jeszcze dostępny do zakupu. Cena ma charakter orientacyjny, a parametry finalnej świecy zostaną potwierdzone po testach.</div><button className="btn" disabled style={{marginTop:20}}>Sprzedaż wkrótce</button><hr style={{border:0,borderTop:'1px solid #cfc5b8',margin:'35px 0'}}/><h3 className="serif" style={{fontSize:30}}>Bezpieczeństwo i pielęgnacja</h3><p>{p.safety}</p><p className="meta">SKU: {p.sku}</p></article></div>}
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { AddToCart } from '@/components/AddToCart';
+import { formatPrice, getProduct } from '@/data/products';
+import { getPublishedProduct } from '@/lib/catalog';
+import { LocalizedProductCopy } from '@/components/localized-product-copy';
+
+export const dynamic = 'force-dynamic';
+
+export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const slug = (await params).slug;
+  const product = await getPublishedProduct(slug);
+  const staticProduct = getProduct(slug);
+  if (!product) notFound();
+
+  return (
+    <article className="product-page-dark">
+      <div className="wrap product-page">
+        <div className="gallery">
+          <div className="product-art product-art-large" role="img" aria-label={`Wizualizacja produktu ${product.name}`} style={product.image_url ? { backgroundImage: `url(${product.image_url})` } : undefined}>
+            {!product.image_url && <span>Zdjęcie w przygotowaniu</span>}
+          </div>
+          {product.images.length > 1 && <div className="product-gallery-thumbnails">{product.images.slice(1).map((image) => <a href={image.url} key={image.url} aria-label={image.alt} target="_blank" rel="noreferrer" style={{ backgroundImage: `url(${image.url})` }} />)}</div>}
+        </div>
+        <section className="product-copy">
+          <Link className="back-link" href="/sklep">← Wróć do kolekcji</Link>
+          <LocalizedProductCopy product={product} />
+          <p className="product-price">{formatPrice(product.price_grosz)}</p>
+          <AddToCart product={{ id: product.id, sku: product.sku, name: product.name, price_grosz: product.price_grosz }} />
+          <p className="image-disclaimer">Zdjęcia mają charakter poglądowy. Wygląd produktu może nieznacznie różnić się od przedstawionego na zdjęciu.</p>
+          <div className="product-safety">
+            <h2 className="serif">Bezpieczeństwo i pielęgnacja</h2>
+            <p>Przed użyciem zapoznaj się z etykietą bezpieczeństwa dołączoną do produktu.</p>
+            {staticProduct?.family === 'glass' ? (
+              <ul className="safety-list">
+                <li>Przy pierwszym paleniu pozwól, aby wosk roztopił się równomiernie do krawędzi naczynia.</li>
+                <li>Przed każdym użyciem przytnij knot do około 5 mm; nie pal świecy dłużej niż 4 godziny jednorazowo.</li>
+                <li>Po zgaszeniu poczekaj, aż wosk i szkło ostygną przed przeniesieniem świecy.</li>
+              </ul>
+            ) : (
+              <ul className="safety-list">
+                <li>Ustaw świecę na stabilnej, żaroodpornej podstawce, która zatrzyma spływający wosk.</li>
+                <li>Przed zapaleniem przytnij knot do około 5 mm i zachowaj odstęp od innych świec.</li>
+                <li>Forma dekoracyjna może zmieniać wygląd podczas palenia — nie pozostawiaj jej bez nadzoru.</li>
+              </ul>
+            )}
+            <ul className="safety-list">
+              <li>Nigdy nie pozostawiaj palącej się świecy bez nadzoru; trzymaj ją z dala od dzieci i zwierząt.</li>
+              <li>Chroń przed przeciągami i materiałami łatwopalnymi. Nigdy nie gaś świecy wodą.</li>
+              <li>Przed pierwszym zapaleniem pozostaw świecę do pełnego utwardzenia zgodnie z informacją na etykiecie.</li>
+            </ul>
+            <p className="meta">SKU: {product.sku}</p>
+          </div>
+        </section>
+      </div>
+    </article>
+  );
+}
