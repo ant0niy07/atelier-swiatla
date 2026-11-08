@@ -8,6 +8,9 @@ declare
   v_subtotal integer := 0; v_eligible integer := 0; v_discount integer := 0; v_shipping integer := 0; v_total integer; v_code text := null;
   v_payment text := p_request->>'paymentMethod'; v_note text := coalesce(p_request->>'note','');
 begin
+  -- Serialise equal idempotency keys before the unique insert. This makes an
+  -- identical concurrent retry observe the completed order instead of raising.
+  perform pg_advisory_xact_lock(hashtext(v_key::text));
   if jsonb_typeof(p_request->'items')<>'array' or jsonb_array_length(p_request->'items')=0 or jsonb_array_length(p_request->'items')>20 then raise exception 'ITEMS_INVALID'; end if;
   if v_payment not in ('blik_before_dispatch','cod','pay_on_local_delivery') then raise exception 'PAYMENT_INVALID'; end if;
   select i.request_hash,o.* into v_existing_hash,v_order from public.checkout_idempotency i left join public.orders o on o.id=i.order_id where i.idempotency_key=v_key;
